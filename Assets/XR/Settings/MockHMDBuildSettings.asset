@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   renderMode: 0
   foveationEnabled: 0
-  gazeSimulationMode: 0
+  gazeSimulationMode: 3
