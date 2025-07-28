@@ -1183,14 +1183,13 @@ GameObject:
   - component: {fileID: 71118101}
   - component: {fileID: 71118100}
   - component: {fileID: 71118102}
-  - component: {fileID: 71118103}
   m_Layer: 5
   m_Name: OpenImportSubmenu
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &71118099
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1198,8 +1197,8 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 71118098}
-  m_LocalRotation: {x: -0, y: 0.28542823, z: -0, w: 0.95840013}
-  m_LocalPosition: {x: 0, y: 0, z: -41.748604}
+  m_LocalRotation: {x: -0, y: 0.2164396, z: -0, w: 0.97629607}
+  m_LocalPosition: {x: 0, y: 0, z: -105.25297}
   m_LocalScale: {x: 0.68180007, y: 1.09088, z: 0.68180007}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1209,10 +1208,10 @@ RectTransform:
   - {fileID: 483601560}
   - {fileID: 1687635417}
   m_Father: {fileID: 664590435}
-  m_LocalEulerAnglesHint: {x: 0, y: 33.169, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 111.9, y: -50.8}
+  m_AnchoredPosition: {x: 118.9, y: 60.6}
   m_SizeDelta: {x: -35.16, y: -58.48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &71118100
@@ -1265,21 +1264,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f443687f97ac7d34a9741cac72fc68e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &71118103
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 71118098}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 364ceab3613ec024eaf7100d28430cec, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MenuManager
-  openImportSubmenu: {fileID: 71118098}
-  exportSubmenu: {fileID: 2002597754}
-  mainCanvas: {fileID: 0}
 --- !u!1 &108491722
 GameObject:
   m_ObjectHideFlags: 0
@@ -3894,19 +3878,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 483601562}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2076820854}
-        m_TargetAssemblyTypeName: FilePicker, Assembly-CSharp
-        m_MethodName: OpenFilePicker
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &483601562
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4954,7 +4926,6 @@ GameObject:
   - component: {fileID: 664590432}
   - component: {fileID: 664590431}
   - component: {fileID: 664590436}
-  - component: {fileID: 664590437}
   m_Layer: 5
   m_Name: Menu
   m_TagString: Untagged
@@ -5083,21 +5054,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f8954d1b8200f4489ac8b0f678d7b3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &664590437
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 664590430}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 364ceab3613ec024eaf7100d28430cec, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MenuManager
-  openImportSubmenu: {fileID: 0}
-  exportSubmenu: {fileID: 0}
-  mainCanvas: {fileID: 0}
 --- !u!1001 &673629424
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5757,31 +5713,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 758674512}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2002597754}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 71118098}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &758674512
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9316,31 +9248,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1373964918}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 71118098}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 2002597754}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1373964918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12991,7 +12899,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2002597755
 RectTransform:
   m_ObjectHideFlags: 0
@@ -13000,7 +12908,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2002597754}
   m_LocalRotation: {x: -0, y: 0.2164396, z: -0, w: 0.97629607}
-  m_LocalPosition: {x: 0, y: 0, z: -41.3}
+  m_LocalPosition: {x: 0, y: 0, z: -132.27605}
   m_LocalScale: {x: 0.68180007, y: 1.09088, z: 0.68180007}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -13012,7 +12920,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 112.4, y: -46.9}
+  m_AnchoredPosition: {x: 179.07297, y: 69.04399}
   m_SizeDelta: {x: -35.16, y: -67.96}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2002597756
@@ -13302,7 +13210,6 @@ Transform:
   - {fileID: 1291399512}
   - {fileID: 798337362}
   - {fileID: 522728844}
-  - {fileID: 2076820853}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2075100749
@@ -13443,50 +13350,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2075100749}
   m_CullTransparentMesh: 1
---- !u!1 &2076820852
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2076820853}
-  - component: {fileID: 2076820854}
-  m_Layer: 0
-  m_Name: FilePickerManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2076820853
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2076820852}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2073726594}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2076820854
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2076820852}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8e666269283a884d9c952ba373901f6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FilePicker
 --- !u!1001 &2079709434
 PrefabInstance:
   m_ObjectHideFlags: 0
