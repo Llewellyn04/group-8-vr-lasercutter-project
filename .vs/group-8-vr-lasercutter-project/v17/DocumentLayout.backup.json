@@ -7,7 +7,7 @@
       "RelativeMoniker": "D:0:0:{F8252259-9753-B797-EBCB-9CE8243C089A}|Unity.XR.Interaction.Toolkit.Samples.StarterAssets.csproj|solutionrelative:assets\\samples\\xr interaction toolkit\\3.1.2\\starter assets\\scripts\\controllerinputactionmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{5C158B19-D614-11B4-8BAF-9C11CB7E0365}|Unity.XR.Interaction.Toolkit.Samples.InteractionSimulator.Editor.csproj|C:\\Users\\kyles\\OneDrive\\Documents\\2025\\Belgium Campus Modules\\PRJ381\\Project\\group-8-vr-lasercutter-project\\assets\\samples\\xr interaction toolkit\\3.2.0\\xr interaction simulator\\editor\\xrinteractionsimulatorprojectvalidation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{5C158B19-D614-11B4-8BAF-9C11CB7E0365}|Unity.XR.Interaction.Toolkit.Samples.InteractionSimulator.Editor.csproj|c:\\users\\kyles\\onedrive\\documents\\2025\\belgium campus modules\\prj381\\project\\group-8-vr-lasercutter-project\\assets\\samples\\xr interaction toolkit\\3.2.0\\xr interaction simulator\\editor\\xrinteractionsimulatorprojectvalidation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{5C158B19-D614-11B4-8BAF-9C11CB7E0365}|Unity.XR.Interaction.Toolkit.Samples.InteractionSimulator.Editor.csproj|solutionrelative:assets\\samples\\xr interaction toolkit\\3.2.0\\xr interaction simulator\\editor\\xrinteractionsimulatorprojectvalidation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -18,21 +18,17 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
-            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "ControllerInputActionManager.cs",
               "DocumentMoniker": "C:\\Users\\kyles\\OneDrive\\Documents\\2025\\Belgium Campus Modules\\PRJ381\\Project\\group-8-vr-lasercutter-project\\Assets\\Samples\\XR Interaction Toolkit\\3.1.2\\Starter Assets\\Scripts\\ControllerInputActionManager.cs",
               "RelativeDocumentMoniker": "Assets\\Samples\\XR Interaction Toolkit\\3.1.2\\Starter Assets\\Scripts\\ControllerInputActionManager.cs",
-              "ToolTip": "C:\\Users\\kyles\\OneDrive\\Documents\\2025\\Belgium Campus Modules\\PRJ381\\Project\\group-8-vr-lasercutter-project\\Assets\\Samples\\XR Interaction Toolkit\\3.1.2\\Starter Assets\\Scripts\\ControllerInputActionManager.cs*",
-              "RelativeToolTip": "Assets\\Samples\\XR Interaction Toolkit\\3.1.2\\Starter Assets\\Scripts\\ControllerInputActionManager.cs*",
-              "ViewState": "AgIAAOUBAAAAAAAAAAAiwPIBAAAJAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\kyles\\OneDrive\\Documents\\2025\\Belgium Campus Modules\\PRJ381\\Project\\group-8-vr-lasercutter-project\\Assets\\Samples\\XR Interaction Toolkit\\3.1.2\\Starter Assets\\Scripts\\ControllerInputActionManager.cs",
+              "RelativeToolTip": "Assets\\Samples\\XR Interaction Toolkit\\3.1.2\\Starter Assets\\Scripts\\ControllerInputActionManager.cs",
+              "ViewState": "AgIAADABAAAAAAAAAAD4vzoBAADnAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-25T10:31:30.122Z",
               "EditorCaption": ""
@@ -47,7 +43,12 @@
               "RelativeToolTip": "Assets\\Samples\\XR Interaction Toolkit\\3.2.0\\XR Interaction Simulator\\Editor\\XRInteractionSimulatorProjectValidation.cs",
               "ViewState": "AgIAABAAAAAAAAAAAAD4vx0AAAC9AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-07-25T10:25:40.513Z"
+              "WhenOpened": "2025-07-25T10:25:40.513Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             }
           ]
         }
