@@ -1,0 +1,63 @@
+using UnityEngine;
+using UnityEngine.XR;
+
+[System.Serializable] // Makes it show in Inspector
+public class VRDrawSettings
+{
+    public Material lineMaterial;
+    public float lineWidth = 0.01f;
+    public Color lineColor = Color.white;
+}
+
+public class SplineVRDraw : MonoBehaviour
+{
+    [Header("Drag References")]
+    public Transform drawingTip; // Drag your DrawingTip here
+    public VRDrawSettings settings;
+
+    [Header("Debug")]
+    public bool alwaysDraw = false; // For testing without buttons
+
+    private LineRenderer currentLine;
+    private bool isDrawing = false;
+
+    void Update()
+    {
+        if (alwaysDraw || isDrawing)
+        {
+            UpdateDrawing();
+        }
+    }
+
+    void UpdateDrawing()
+    {
+        if (currentLine == null) return;
+
+        currentLine.positionCount++;
+        currentLine.SetPosition(currentLine.positionCount - 1, drawingTip.position);
+    }
+
+    public void StartDrawing()
+    {
+        GameObject lineObj = new GameObject("VR_Drawing");
+        currentLine = lineObj.AddComponent<LineRenderer>();
+
+        currentLine.material = settings.lineMaterial;
+        currentLine.startColor = settings.lineColor;
+        currentLine.endColor = settings.lineColor;
+        currentLine.startWidth = settings.lineWidth;
+        currentLine.endWidth = settings.lineWidth;
+        currentLine.positionCount = 0;
+
+        isDrawing = true;
+    }
+
+    public void StopDrawing()
+    {
+        isDrawing = false;
+        if (currentLine != null && currentLine.positionCount > 2)
+        {
+            currentLine.loop = true; // Close the shape
+        }
+    }
+}
