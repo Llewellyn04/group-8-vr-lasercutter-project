@@ -735,7 +735,7 @@ Transform:
   m_GameObject: {fileID: 29628475}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -0.481}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3465,10 +3465,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit.Samples.StarterAssets::SplineVRDraw
   whiteboardPlane: {fileID: 896071513}
-  drawDistanceThreshold: 0.5
+  drawDistanceThreshold: 1
   drawingTip: {fileID: 636695651}
   settings:
-    lineMaterial: {fileID: 0}
+    lineMaterial: {fileID: -2505642851634945670, guid: f396e3429a4864fc2ad497cb3ce5fe2c, type: 3}
     lineWidth: 0.01
     lineColor: {r: 1, g: 1, b: 1, a: 1}
   alwaysDraw: 1
