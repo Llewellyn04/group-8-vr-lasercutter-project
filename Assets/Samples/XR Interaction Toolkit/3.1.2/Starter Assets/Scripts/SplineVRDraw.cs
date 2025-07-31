@@ -32,30 +32,29 @@ public class SplineVRDraw : MonoBehaviour
         }
     }
 
-    void UpdateDrawing()
+   void UpdateDrawing()
+{
+    if (currentLine == null || whiteboardPlane == null) return;
+
+    // Define the whiteboard plane
+    Plane plane = new Plane(whiteboardPlane.forward, whiteboardPlane.position);
+
+    // Get tip position and direction
+    Ray ray = new Ray(drawingTip.position - drawingTip.forward * 0.05f, drawingTip.forward);
+
+    if (plane.Raycast(ray, out float enter))
     {
-        if (currentLine == null || whiteboardPlane == null) return;
+        Vector3 hitPoint = ray.GetPoint(enter);
+        float distanceToTip = Vector3.Distance(drawingTip.position, hitPoint);
 
-        // Define the whiteboard plane
-        Plane plane = new Plane(whiteboardPlane.forward, whiteboardPlane.position);
-
-        // Get tip position and direction
-        Ray ray = new Ray(drawingTip.position - drawingTip.forward * 0.05f, drawingTip.forward);
-
-        if (plane.Raycast(ray, out float enter))
+        // Only draw if tip is close enough to the surface
+        if (distanceToTip <= drawDistanceThreshold)
         {
-            Vector3 hitPoint = ray.GetPoint(enter);
-            float distanceToTip = Vector3.Distance(drawingTip.position, hitPoint);
-
-            // Only draw if tip is close enough to the surface
-            if (distanceToTip <= drawDistanceThreshold)
-            {
-                currentLine.positionCount++;
-                currentLine.SetPosition(currentLine.positionCount - 1, hitPoint);
-            }
+            currentLine.positionCount++;
+            currentLine.SetPosition(currentLine.positionCount - 1, hitPoint);
         }
     }
-
+}
     public void StartDrawing()
     {
         GameObject lineObj = new GameObject("VR_Drawing");
