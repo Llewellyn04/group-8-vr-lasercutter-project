@@ -3466,6 +3466,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit.Samples.StarterAssets::SplineVRDraw
   whiteboardPlane: {fileID: 896071513}
   drawDistanceThreshold: 1
+  maxWidth: 1
+  maxHeight: 1
   drawingTip: {fileID: 636695651}
   settings:
     lineMaterial: {fileID: -2505642851634945670, guid: f396e3429a4864fc2ad497cb3ce5fe2c, type: 3}
@@ -7122,7 +7124,7 @@ GameObject:
   - component: {fileID: 896071515}
   - component: {fileID: 896071514}
   m_Layer: 5
-  m_Name: Drawing_Panel
+  m_Name: WhiteBoard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
