@@ -11,6 +11,9 @@ public class VRDrawSettings
 
 public class SplineVRDraw : MonoBehaviour
 {
+    public Transform whiteboardPlane; // Assign this in Inspector (e.g., a flat GameObject like a quad)
+    public float drawDistanceThreshold = 0.01f; // Max distance allowed to the board to draw
+
     [Header("Drag References")]
     public Transform drawingTip; // Drag your DrawingTip here
     public VRDrawSettings settings;
@@ -31,10 +34,26 @@ public class SplineVRDraw : MonoBehaviour
 
     void UpdateDrawing()
     {
-        if (currentLine == null) return;
+        if (currentLine == null || whiteboardPlane == null) return;
 
-        currentLine.positionCount++;
-        currentLine.SetPosition(currentLine.positionCount - 1, drawingTip.position);
+        // Define the whiteboard plane
+        Plane plane = new Plane(whiteboardPlane.forward, whiteboardPlane.position);
+
+        // Get tip position and direction
+        Ray ray = new Ray(drawingTip.position - drawingTip.forward * 0.05f, drawingTip.forward);
+
+        if (plane.Raycast(ray, out float enter))
+        {
+            Vector3 hitPoint = ray.GetPoint(enter);
+            float distanceToTip = Vector3.Distance(drawingTip.position, hitPoint);
+
+            // Only draw if tip is close enough to the surface
+            if (distanceToTip <= drawDistanceThreshold)
+            {
+                currentLine.positionCount++;
+                currentLine.SetPosition(currentLine.positionCount - 1, hitPoint);
+            }
+        }
     }
 
     public void StartDrawing()
