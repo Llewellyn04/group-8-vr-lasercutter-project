@@ -3,7 +3,7 @@ using UnityEngine.XR.Interaction.Toolkit;
 
 public class VRRectangleDrawer : MonoBehaviour
 {
-    public XRController rightHandController;
+    public XRController Controller;
     public InputHelpers.Button drawButton;
     public float triggerThreshold = 0.1f;
     public Material rectangleMaterial;
@@ -16,7 +16,7 @@ public class VRRectangleDrawer : MonoBehaviour
 
     void Update()
     {
-        if (rightHandController.inputDevice.IsPressed(drawButton, out bool isPressed, triggerThreshold))
+        if (Controller.inputDevice.IsPressed(drawButton, out bool isPressed, triggerThreshold))
         {
             if (isPressed && !isDrawing)
                 StartDrawing();
@@ -30,7 +30,7 @@ public class VRRectangleDrawer : MonoBehaviour
     void StartDrawing()
     {
         isDrawing = true;
-        startPoint = rightHandController.transform.position;
+        startPoint = Controller.transform.position;
 
         // Create a new rectangle object
         currentRectangle = new GameObject("Rectangle");
@@ -46,7 +46,7 @@ public class VRRectangleDrawer : MonoBehaviour
 
     void ContinueDrawing()
     {
-        Vector3 endPoint = rightHandController.transform.position;
+        Vector3 endPoint = Controller.transform.position;
 
         // Calculate the rectangle corners
         Vector3[] corners = new Vector3[5];
