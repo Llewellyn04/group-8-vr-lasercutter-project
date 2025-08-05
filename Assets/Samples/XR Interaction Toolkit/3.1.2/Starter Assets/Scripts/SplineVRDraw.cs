@@ -14,6 +14,10 @@ public class SplineVRDraw : MonoBehaviour
     public Transform whiteboardPlane; // Assign this in Inspector (e.g., a flat GameObject like a quad)
     public float drawDistanceThreshold = 0.01f; // Max distance allowed to the board to draw
 
+    [Header("Drawing Bounds")]
+    public float maxWidth = 1.0f;  // Max width (centered on plane)
+    public float maxHeight = 1.0f; // Max height (centered on plane)
+
     [Header("Drag References")]
     public Transform drawingTip; // Drag your DrawingTip here
     public VRDrawSettings settings;
@@ -45,17 +49,30 @@ public class SplineVRDraw : MonoBehaviour
         if (plane.Raycast(ray, out float enter))
         {
             Vector3 hitPoint = ray.GetPoint(enter);
-            float distanceToTip = Vector3.Distance(drawingTip.position, hitPoint);
 
-            // Only draw if tip is close enough to the surface
-            if (distanceToTip <= drawDistanceThreshold)
+            // Project hitPoint onto plane's local space
+            Vector3 localPoint = whiteboardPlane.InverseTransformPoint(hitPoint);
+
+            // Clamp localPoint to whiteboard bounds
+            float halfWidth = maxWidth * 0.5f;
+            float halfHeight = maxHeight * 0.5f;
+            localPoint.x = Mathf.Clamp(localPoint.x, -halfWidth, halfWidth);
+            localPoint.y = Mathf.Clamp(localPoint.y, -halfHeight, halfHeight);
+            localPoint.z = 0; // Ensure point is on the whiteboard surface
+
+            // Convert back to world space
+            Vector3 clampedWorldPoint = whiteboardPlane.TransformPoint(localPoint);
+
+            // Only draw if the original hitPoint was within bounds
+            bool withinBounds = Mathf.Abs(localPoint.x) <= halfWidth && Mathf.Abs(localPoint.y) <= halfHeight;
+
+            if (withinBounds)
             {
                 currentLine.positionCount++;
-                currentLine.SetPosition(currentLine.positionCount - 1, hitPoint);
+                currentLine.SetPosition(currentLine.positionCount - 1, clampedWorldPoint);
             }
         }
     }
-
     public void StartDrawing()
     {
         GameObject lineObj = new GameObject("VR_Drawing");
