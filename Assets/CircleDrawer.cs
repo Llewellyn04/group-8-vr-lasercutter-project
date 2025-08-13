@@ -1,56 +1,82 @@
 using UnityEngine;
 
-
-[RequireComponent(typeof(LineRenderer))]
-public class VRCircleDrawer : MonoBehaviour
+public class PerfectCircleDrawer : MonoBehaviour
 {
-    public Transform controller; // VR controller transform
-    public UnityEngine.XR.InputDeviceRole controllerRole = UnityEngine.XR.InputDeviceRole.RightHanded;// Change for your SDK
-    public int segments = 100;
+    public Camera drawingCamera;               // Camera that looks at the drawing plane
+    public GameObject drawingPlane;            // Plane (must have a Collider)
+    public LineRenderer lineRendererPrefab;    // Prefab with a LineRenderer + material
+    public int circleSegments = 100;           // Smoothness of the circle
 
-    private LineRenderer line;
-    private Vector3 startPoint;
+    private LineRenderer currentLineRenderer;
+    private Vector2 startLocalPoint;           // Circle center in plane local space
     private bool isDrawing = false;
-
-    void Start()
-    {
-        line = GetComponent<LineRenderer>();
-        line.positionCount = 0;
-        line.useWorldSpace = true;
-        line.widthMultiplier = 0.01f; // Thickness
-    }
+    private bool isCircleMode = false;
 
     void Update()
     {
-        if (OVRInput.GetDown(drawButton))
+        if (!isDrawing) return;
+
+        // Start circle on mouse down
+        if (Input.GetMouseButtonDown(0))
         {
-            startPoint = controller.position;
-            isDrawing = true;
+            StartNewLine();
+            Vector2 mousePosition = Input.mousePosition;
+            startLocalPoint = GetLocalPointOnPlane(mousePosition);
+            isCircleMode = true;
         }
 
-        if (isDrawing && OVRInput.Get(drawButton))
+        // Update circle while holding mouse
+        if (Input.GetMouseButton(0) && isCircleMode)
         {
-            float radius = Vector3.Distance(startPoint, controller.position);
-            DrawCircle(startPoint, radius);
+            Vector2 mousePosition = Input.mousePosition;
+            Vector2 currentLocalPoint = GetLocalPointOnPlane(mousePosition);
+            float radius = Vector2.Distance(startLocalPoint, currentLocalPoint);
+            DrawCircle(startLocalPoint, radius);
         }
 
-        if (OVRInput.GetUp(drawButton))
+        // Stop drawing on release
+        if (Input.GetMouseButtonUp(0))
         {
-            isDrawing = false;
+            isCircleMode = false;
         }
     }
 
-    void DrawCircle(Vector3 center, float radius)
-    {
-        line.positionCount = segments + 1;
-        float angle = 0f;
+    public void EnableDrawingMode() { isDrawing = true; }
+    public void DisableDrawingMode() { isDrawing = false; isCircleMode = false; }
 
-        for (int i = 0; i <= segments; i++)
+    private void StartNewLine()
+    {
+        currentLineRenderer = Instantiate(lineRendererPrefab, drawingPlane.transform);
+        currentLineRenderer.positionCount = 0;
+        currentLineRenderer.loop = true;        // close the circle
+        currentLineRenderer.useWorldSpace = true;
+    }
+
+    private Vector2 GetLocalPointOnPlane(Vector2 screenPosition)
+    {
+        Ray ray = drawingCamera.ScreenPointToRay(screenPosition);
+        if (Physics.Raycast(ray, out RaycastHit hit) && hit.collider.gameObject == drawingPlane)
         {
-            float x = Mathf.Cos(Mathf.Deg2Rad * angle) * radius;
-            float z = Mathf.Sin(Mathf.Deg2Rad * angle) * radius; // Z axis for ground plane
-            line.SetPosition(i, new Vector3(center.x + x, center.y, center.z + z));
-            angle += 360f / segments;
+            Vector3 worldPoint = hit.point;
+            return drawingPlane.transform.InverseTransformPoint(worldPoint);
+        }
+        return Vector2.zero;
+    }
+
+    private void DrawCircle(Vector2 centerLocal, float radius)
+    {
+        if (currentLineRenderer == null) return;
+
+        currentLineRenderer.positionCount = circleSegments + 1;
+
+        for (int i = 0; i <= circleSegments; i++)
+        {
+            float angle = i * Mathf.PI * 2f / circleSegments;
+            float x = centerLocal.x + Mathf.Cos(angle) * radius;
+            float y = centerLocal.y + Mathf.Sin(angle) * radius;
+
+            Vector3 worldPoint = drawingPlane.transform.TransformPoint(new Vector3(x, y, 0f));
+            currentLineRenderer.SetPosition(i, worldPoint);
         }
     }
 }

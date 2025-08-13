@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class DrawingSystem : MonoBehaviour
+public class SplineDrawingSystem : MonoBehaviour
 {
     public Camera drawingCamera; // Camera used to view the drawing plane
     public GameObject drawingPlane; // The 2D plane where the user will draw
