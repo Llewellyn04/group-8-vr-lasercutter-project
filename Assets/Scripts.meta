@@ -6,3 +6,43 @@ DefaultImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
+
+using UnityEngine;
+
+public class DrawStraightLine : MonoBehaviour
+{
+    public KeyCode drawKey = KeyCode.Mouse0; // Change to any key you want
+    public LineRenderer lineRenderer;
+    private bool isDrawing = false;
+    private Vector3 startPoint;
+
+    void Update()
+    {
+        if (Input.GetKeyDown(drawKey))
+        {
+            isDrawing = true;
+            startPoint = GetMouseWorldPosition();
+            lineRenderer.positionCount = 2;
+            lineRenderer.SetPosition(0, startPoint);
+            lineRenderer.SetPosition(1, startPoint);
+        }
+
+        if (isDrawing)
+        {
+            Vector3 endPoint = GetMouseWorldPosition();
+            lineRenderer.SetPosition(1, endPoint);
+
+            if (Input.GetKeyUp(drawKey))
+            {
+                isDrawing = false;
+            }
+        }
+    }
+
+    Vector3 GetMouseWorldPosition()
+    {
+        Vector3 mousePos = Input.mousePosition;
+        mousePos.z = 10f; // Distance from camera
+        return Camera.main.ScreenToWorldPoint(mousePos);
+    }
+}
