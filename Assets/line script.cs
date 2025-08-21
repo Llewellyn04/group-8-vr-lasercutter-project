@@ -31,8 +31,7 @@ public class DrawStraightLine : MonoBehaviour
             }
         }
     }
-
-    // Call this method from a Unity button
+    
     public void StartDrawingLine()
     {
         if (!isDrawing)
@@ -40,17 +39,14 @@ public class DrawStraightLine : MonoBehaviour
             isDrawing = true;
             lineStarted = false;
             
-            // Set up the line renderer
             lineRenderer.positionCount = 2;
             
-            // Start coroutine to wait for first click
             StartCoroutine(WaitForStartPoint());
         }
     }
 
     private IEnumerator WaitForStartPoint()
     {
-        // Wait for the first mouse click to set start point
         while (!Input.GetMouseButtonDown(0))
         {
             yield return null;
