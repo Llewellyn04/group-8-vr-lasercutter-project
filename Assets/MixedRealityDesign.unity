@@ -4018,8 +4018,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit.Samples.StarterAssets::SplineVRDraw
   whiteboardPlane: {fileID: 896071513}
   drawDistanceThreshold: 1
-  maxWidth: 1
-  maxHeight: 1
+  maxWidth: 135
+  maxHeight: 135
   drawingTip: {fileID: 636695651}
   settings:
     lineMaterial: {fileID: -2505642851634945670, guid: f396e3429a4864fc2ad497cb3ce5fe2c, type: 3}
@@ -8001,6 +8001,7 @@ GameObject:
   - component: {fileID: 896071513}
   - component: {fileID: 896071515}
   - component: {fileID: 896071514}
+  - component: {fileID: 896071516}
   m_Layer: 5
   m_Name: WhiteBoard
   m_TagString: Untagged
@@ -8024,8 +8025,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -65.16, y: 5}
-  m_SizeDelta: {x: 47.25, y: 43.1}
+  m_AnchoredPosition: {x: -65.16, y: 4.8424997}
+  m_SizeDelta: {x: 47.249, y: 44.315}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &896071514
 MonoBehaviour:
@@ -8065,6 +8066,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 896071512}
   m_CullTransparentMesh: 1
+--- !u!223 &896071516
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 896071512}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
 --- !u!114 &924875308 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8291460657195287878, guid: b6d57cedc6a73c94aad8ce006a26b41b, type: 3}
@@ -11000,7 +11024,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1353939259}
-  - component: {fileID: 1353939258}
+  - component: {fileID: 1353939260}
   m_Layer: 0
   m_Name: FileListManager
   m_TagString: Untagged
@@ -11008,7 +11032,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1353939258
+--- !u!4 &1353939259
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1353939257}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.01617, y: 0.25, z: 0.9107}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1353939260
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -11025,21 +11064,18 @@ MonoBehaviour:
   scrollViewContent: {fileID: 623973891}
   fileButtonPrefab: {fileID: 48214509}
   importFolderPath: ImportsDxfSVG134567
---- !u!4 &1353939259
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1353939257}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.01617, y: 0.25, z: 0.9107}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  drawingManagerObject: {fileID: 419394395}
+  drawingPlane: {fileID: 896071512}
+  lineRendererPrefab: {fileID: 1434939225}
+  whiteboardWidth: 130
+  whiteboardHeight: 130
+  whiteboardCenter: {x: 0, y: 0}
+  importedDrawingColor: {r: 1, g: 0, b: 0, a: 1}
+  useSimplifiedParsing: 1
+  showDXFAsPoints: 1
+  pointPrefab: {fileID: 0}
+  logDXFContent: 1
+  enableDebugLogs: 1
 --- !u!114 &1358952311 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5288399891378806173, guid: 1782b89ac15b3c34cbc28f0ede57d895, type: 3}
@@ -11197,6 +11233,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1373964915}
   m_CullTransparentMesh: 1
+--- !u!120 &1434939225 stripped
+LineRenderer:
+  m_CorrespondingSourceObject: {fileID: 2367190963215951173, guid: df4994783d81d46488d3fb4f522edbac, type: 3}
+  m_PrefabInstance: {fileID: 1704340422135113747}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1447127281
 GameObject:
   m_ObjectHideFlags: 0
@@ -17247,13 +17288,17 @@ PrefabInstance:
       propertyPath: m_UseWorldSpace
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2367190963215951173, guid: df4994783d81d46488d3fb4f522edbac, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 727f87098255ad04987a60f5f08390bc, type: 2}
     - target: {fileID: 7819355356262457527, guid: df4994783d81d46488d3fb4f522edbac, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.09083
+      value: -0.094
       objectReference: {fileID: 0}
     - target: {fileID: 7819355356262457527, guid: df4994783d81d46488d3fb4f522edbac, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.40438
+      value: 1.229
       objectReference: {fileID: 0}
     - target: {fileID: 7819355356262457527, guid: df4994783d81d46488d3fb4f522edbac, type: 3}
       propertyPath: m_LocalPosition.z
