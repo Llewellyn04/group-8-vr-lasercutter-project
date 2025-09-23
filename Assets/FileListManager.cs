@@ -702,9 +702,15 @@ public class FileListManager : MonoBehaviour
         if (drawingSize.y == 0f) drawingSize.y = 1e-6f;
         Vector2 drawingCenter = (min + max) / 2f;
 
-        float scaleX = (whiteboardWidth * 0.8f) / drawingSize.x;
-        float scaleY = (whiteboardHeight * 0.8f) / drawingSize.y;
-        float scale = Mathf.Min(Mathf.Abs(scaleX), Mathf.Abs(scaleY));
+        float safeWidth = Mathf.Max(drawingSize.x, 0.001f);
+        float safeHeight = Mathf.Max(drawingSize.y, 0.001f);
+
+        float scaleX = (whiteboardWidth * 0.8f) / safeWidth;
+        float scaleY = (whiteboardHeight * 0.8f) / safeHeight;
+        float scale = Mathf.Min(scaleX, scaleY);
+
+        // Clamp scale to a sane range
+        scale = Mathf.Clamp(scale, 0.001f, 10f);
 
         if (!float.IsFinite(scale) || scale <= 0)
             scale = 0.001f; // fallback

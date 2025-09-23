@@ -17349,6 +17349,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 713130732493535488, guid: 1782b89ac15b3c34cbc28f0ede57d895, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1447839107455911567, guid: 1782b89ac15b3c34cbc28f0ede57d895, type: 3}
       propertyPath: m_OcclusionShaderMode
       value: 2
@@ -17438,6 +17442,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6480786065086515901, guid: 1782b89ac15b3c34cbc28f0ede57d895, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6679177977454171884, guid: 1782b89ac15b3c34cbc28f0ede57d895, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
