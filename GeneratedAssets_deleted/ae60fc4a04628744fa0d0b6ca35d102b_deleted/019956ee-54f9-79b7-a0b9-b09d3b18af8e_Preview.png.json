@@ -1,0 +1,11 @@
+{
+    "asset": "ae60fc4a04628744fa0d0b6ca35d102b",
+    "fileName": "019956ee-54f9-79b7-a0b9-b09d3b18af8e_Preview.png",
+    "prompt": "a light gray grid that will be on my whiteboard",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 916428690,
+    "w3CTraceId": "2ffb06263c193dbdf4dd85a27f12018f",
+    "refinementMode": "Generation"
+}
