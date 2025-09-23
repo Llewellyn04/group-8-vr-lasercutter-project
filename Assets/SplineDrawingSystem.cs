@@ -23,7 +23,7 @@ public class DrawingSystem : MonoBehaviour
     private LineRenderer currentLineRenderer;
     private List<Vector2> drawingPoints = new List<Vector2>();
     private List<LineRenderer> allDrawnLines = new List<LineRenderer>(); // Track all lines
-    private bool isDrawing = false;
+     private bool isDrawing = false;
     private bool isCurrentlyDrawingLine = false;
 
     void Start()
