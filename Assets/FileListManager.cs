@@ -37,6 +37,9 @@ public class FileListManager : MonoBehaviour
     [Header("Debug Settings")]
     public bool enableDebugLogs = true;
 
+    [Header("Z-Position Control")]
+    public float importedDrawingZOffset = 0.01f; // Positive value brings drawings forward
+
     private List<GameObject> instantiatedButtons = new List<GameObject>();
     private List<GameObject> currentDrawings = new List<GameObject>();
     private bool isPanelOpen = false;
@@ -595,7 +598,8 @@ public class FileListManager : MonoBehaviour
             {
                 GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 sphere.transform.parent = drawingPlane.transform;
-                sphere.transform.localPosition = new Vector3(point.x * 0.01f, point.y * 0.01f, 0);
+                // Use positive Z offset to bring points in front of whiteboard
+                sphere.transform.localPosition = new Vector3(point.x * 0.01f, point.y * 0.01f, importedDrawingZOffset);
                 sphere.transform.localScale = Vector3.one * 0.02f;
                 sphere.GetComponent<Renderer>().material.color = importedDrawingColor;
                 currentDrawings.Add(sphere);
@@ -609,7 +613,8 @@ public class FileListManager : MonoBehaviour
     {
         GameObject textObj = new GameObject("DXF_Info");
         textObj.transform.parent = drawingPlane.transform;
-        textObj.transform.localPosition = Vector3.zero;
+        // Use positive Z offset to bring text in front of whiteboard
+        textObj.transform.localPosition = new Vector3(0, 0, importedDrawingZOffset);
 
         TextMesh textMesh = textObj.AddComponent<TextMesh>();
         textMesh.text = $"DXF File Loaded\nSize: {content.Length} chars\nClick 'Clear' to remove";
@@ -723,7 +728,8 @@ public class FileListManager : MonoBehaviour
         foreach (var cmd in safe)
         {
             Vector2 scaledPos = (cmd.position - drawingCenter) * scale + whiteboardCenter;
-            Vector3 local = new Vector3(scaledPos.x, scaledPos.y, 0);
+            // Use positive Z offset to ensure drawing appears in front of whiteboard
+            Vector3 local = new Vector3(scaledPos.x, scaledPos.y, importedDrawingZOffset);
 
             if (cmd.type == DrawingCommand.CommandType.MoveTo)
             {
@@ -763,6 +769,12 @@ public class FileListManager : MonoBehaviour
         lr.startWidth = lr.endWidth = 0.02f;
         lr.useWorldSpace = false;
 
+        // Set sorting layer or render queue to ensure it renders on top
+        if (lr.material != null)
+        {
+            lr.material.renderQueue = 3000; // Render after most objects
+        }
+
         currentDrawings.Add(lineObj);
         return lr;
     }
@@ -788,7 +800,7 @@ public class FileListManager : MonoBehaviour
             points[i] = new Vector3(
                 center.x + radius * Mathf.Cos(angle),
                 center.y + radius * Mathf.Sin(angle),
-                0
+                importedDrawingZOffset // Use consistent Z offset for circles too
             );
         }
 
