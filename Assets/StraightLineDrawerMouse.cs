@@ -41,6 +41,8 @@ public class StraightLineDots : MonoBehaviour
         {
             Vector3 worldPoint = hitPoint.Value;
 
+
+
             if (!hasLastPoint)
             {
                 // Start new line
