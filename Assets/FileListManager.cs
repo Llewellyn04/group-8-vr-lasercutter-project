@@ -7,7 +7,9 @@ using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
+using static Unity.Burst.Intrinsics.Arm;
 
 public class FileListManager : MonoBehaviour
 {
@@ -66,22 +68,67 @@ public class FileListManager : MonoBehaviour
 
     void Start()
     {
+
         DebugLog("=== FileListManager Start() ===");
         ValidateComponents();
 
+        // Configure Canvas for VR properly
+        Canvas mainCanvas = null;
+        if (fileSelectionPanel != null)
+        {
+            mainCanvas = fileSelectionPanel.GetComponentInParent<Canvas>();
+        }
+
+        if (mainCanvas != null)
+        {
+            DebugLog($"Canvas found - Current render mode: {mainCanvas.renderMode}");
+
+            // For VR, ensure proper canvas setup
+            if (mainCanvas.renderMode == RenderMode.WorldSpace)
+            {
+                // Make sure the canvas scale is appropriate for VR
+                if (mainCanvas.transform.localScale.x < 0.001f)
+                {
+                    mainCanvas.transform.localScale = Vector3.one * 0.001f;
+                    DebugLog("Adjusted canvas scale for VR visibility");
+                }
+            }
+
+            // Ensure GraphicRaycaster is present and configured
+            GraphicRaycaster raycaster = mainCanvas.GetComponent<GraphicRaycaster>();
+            if (raycaster == null)
+            {
+                raycaster = mainCanvas.gameObject.AddComponent<GraphicRaycaster>();
+                DebugLog("Added GraphicRaycaster to canvas");
+            }
+
+            // Important for VR: Make sure raycaster can detect interactions
+            raycaster.ignoreReversedGraphics = false;
+            raycaster.blockingObjects = GraphicRaycaster.BlockingObjects.None;
+        }
+
+        // Handle prefab positioning
+        if (fileButtonPrefab != null && fileButtonPrefab.transform.parent == scrollViewContent)
+        {
+            fileButtonPrefab.transform.SetAsLastSibling();
+            Button prefabButton = fileButtonPrefab.GetComponent<Button>();
+            if (prefabButton != null)
+            {
+                prefabButton.interactable = false;
+            }
+            DebugLog("Configured prefab button");
+        }
+
+        // Rest of your existing code...
         if (fileSelectionPanel != null)
         {
             fileSelectionPanel.SetActive(false);
-            DebugLog("File selection panel set to inactive at start");
         }
-        else DebugLog("ERROR: fileSelectionPanel is not assigned!", true);
 
         if (togglePanelButton != null)
         {
             togglePanelButton.onClick.AddListener(TogglePanel);
-            DebugLog("Toggle button listener added");
         }
-        else DebugLog("ERROR: togglePanelButton is not assigned!", true);
     }
 
     private void ValidateComponents()
@@ -92,7 +139,27 @@ public class FileListManager : MonoBehaviour
             DebugLog("ERROR: No EventSystem found! Adding one...", true);
             GameObject eventSystemGO = new GameObject("EventSystem");
             eventSystemGO.AddComponent<EventSystem>();
-            eventSystemGO.AddComponent<StandaloneInputModule>();
+            eventSystemGO.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        }
+        else
+        {
+            // Check for Input System UI Input Module
+            var inputSystemModule = eventSystem.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+
+            if (inputSystemModule != null)
+            {
+                DebugLog("Input System UI Module found - configuring for VR UI interaction");
+
+                // Enable all interaction modes
+                inputSystemModule.enabled = true;
+
+                DebugLog("Input System UI Module configured");
+            }
+            else
+            {
+                DebugLog("No Input System UI Module found, adding one...");
+                eventSystem.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            }
         }
     }
 
@@ -117,6 +184,11 @@ public class FileListManager : MonoBehaviour
         DebugLog("=== PopulateFileList CALLED ===");
         ClearExistingButtons();
 
+        if (scrollViewContent != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(scrollViewContent.GetComponent<RectTransform>());
+        }
+
         string fullPath = Path.Combine(Application.dataPath, importFolderPath);
         DebugLog($"Looking for files in: {fullPath}");
 
@@ -140,6 +212,14 @@ public class FileListManager : MonoBehaviour
             DebugLog($"Creating button for {filePath}");
             CreateFileButton(filePath);
         }
+
+        if (scrollViewContent != null)
+        {
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(scrollViewContent.GetComponent<RectTransform>());
+        }
+
+        DebugButtonBlocking();
     }
 
     private void CreateFileButton(string filePath)
@@ -154,8 +234,35 @@ public class FileListManager : MonoBehaviour
         }
 
         GameObject newButton = Instantiate(fileButtonPrefab, scrollViewContent);
+        newButton.name = $"FileButton_{fileName}";
 
-        // Set up text
+        // Ensure proper VR UI setup
+        Button button = newButton.GetComponent<Button>();
+        if (button != null)
+        {
+            button.interactable = true;
+
+            // Ensure the button's Image component can receive raycasts
+            Image buttonImage = button.GetComponent<Image>();
+            if (buttonImage != null)
+            {
+                buttonImage.raycastTarget = true;
+            }
+
+            // Clear existing listeners and add new one
+            button.onClick.RemoveAllListeners();
+
+            // Capture variables
+            string capturedName = fileName;
+            string capturedPath = filePath;
+
+            button.onClick.AddListener(() => {
+                DebugLog($"BUTTON CLICKED: {capturedName}");
+                OnFileButtonClicked(capturedName, capturedPath);
+            });
+        }
+
+        // Set button text
         TextMeshProUGUI tmpText = newButton.GetComponentInChildren<TextMeshProUGUI>();
         if (tmpText != null) tmpText.text = fileName;
         else
@@ -164,18 +271,38 @@ public class FileListManager : MonoBehaviour
             if (txt != null) txt.text = fileName;
         }
 
-        // Capture variables correctly
-        string capturedName = fileName;
-        string capturedPath = filePath;
-
-        Button button = newButton.GetComponent<Button>();
-        if (button != null)
-        {
-            button.onClick.AddListener(() => OnFileButtonClicked(capturedName, capturedPath));
-            DebugLog("Click listener added to button");
-        }
+        // Force layout update
+        LayoutRebuilder.MarkLayoutForRebuild(scrollViewContent.GetComponent<RectTransform>());
 
         instantiatedButtons.Add(newButton);
+        DebugLog($"Created button for {fileName}, total buttons: {instantiatedButtons.Count}");
+    }
+
+    public void DebugButtonBlocking()
+    {
+        if (instantiatedButtons.Count > 0)
+        {
+            for (int i = 0; i < Mathf.Min(3, instantiatedButtons.Count); i++)
+            {
+                Button btn = instantiatedButtons[i].GetComponent<Button>();
+                if (btn != null)
+                {
+                    bool interactable = btn.interactable;
+                    bool raycastTarget = btn.GetComponent<Image>()?.raycastTarget ?? false;
+
+                    DebugLog($"Button {i}: Interactable={interactable}, RaycastTarget={raycastTarget}");
+
+                    // Check if something is covering this button
+                    RectTransform rectTransform = btn.GetComponent<RectTransform>();
+                    if (rectTransform != null)
+                    {
+                        Vector3[] corners = new Vector3[4];
+                        rectTransform.GetWorldCorners(corners);
+                        DebugLog($"Button {i} world bounds: {corners[0]} to {corners[2]}");
+                    }
+                }
+            }
+        }
     }
 
     private void OnFileButtonClicked(string fileName, string fullFilePath)
@@ -207,7 +334,7 @@ public class FileListManager : MonoBehaviour
                 break;
         }
 
-       // TogglePanel();
+        // TogglePanel();
     }
 
     private void LoadDXFFile(string filePath)
@@ -218,38 +345,64 @@ public class FileListManager : MonoBehaviour
             string fileContent = File.ReadAllText(filePath);
             DebugLog($"DXF file size: {fileContent.Length} characters");
 
-            if (logDXFContent)
-            {
-                LogDXFStructure(fileContent);
-            }
+            List<DrawingCommand> commands = new List<DrawingCommand>();
 
-            List<DrawingCommand> commands;
+            // Try complete parsing first
+            commands = ParseDXFComplete(fileContent);
+            DebugLog($"Complete parsing produced {commands.Count} commands");
 
-            if (useSimplifiedParsing)
+            // If that fails, try simplified
+            if (commands.Count == 0)
             {
+                DebugLog("Complete parsing failed, trying simplified...");
                 commands = ParseDXFSimplified(fileContent);
-            }
-            else
-            {
-                commands = ParseDXFComplete(fileContent);
+                DebugLog($"Simplified parsing produced {commands.Count} commands");
             }
 
-            DebugLog($"DXF produced {commands.Count} drawing commands");
+            // If both fail, try extracting raw coordinates
+            if (commands.Count == 0)
+            {
+                DebugLog("Both parsers failed, extracting raw coordinates...");
+                List<Vector2> rawCoords = ExtractAllCoordinates(fileContent);
+                if (rawCoords.Count > 1)
+                {
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = rawCoords[0] });
+                    for (int i = 1; i < rawCoords.Count; i++)
+                    {
+                        commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = rawCoords[i] });
+                    }
+                    DebugLog($"Raw coordinate extraction found {commands.Count} commands");
+                }
+            }
 
             if (commands.Count > 0)
             {
                 DrawOnWhiteboard(commands);
+                DebugLog($"Successfully drew {commands.Count} commands");
             }
             else
             {
-                DebugLog("WARNING: DXF had no drawable commands - trying alternative methods", true);
-                TryAlternativeDXFDisplay(fileContent);
+                DebugLog("ERROR: Could not extract any drawable data from DXF", true);
+                // Don't call TryAlternativeDXFDisplay - it creates that text message
+                CreateSimpleErrorIndicator("DXF: No drawable data found");
             }
         }
         catch (System.Exception e)
         {
             DebugLog($"ERROR reading DXF: {e.Message}", true);
+            CreateSimpleErrorIndicator($"DXF Error: {e.Message}");
         }
+    }
+
+    private void CreateSimpleErrorIndicator(string message)
+    {
+        GameObject indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        indicator.transform.parent = drawingPlane.transform;
+        indicator.transform.localPosition = new Vector3(0, 0, importedDrawingZOffset);
+        indicator.transform.localScale = Vector3.one * 0.1f;
+        indicator.GetComponent<Renderer>().material.color = Color.red;
+        currentDrawings.Add(indicator);
+        DebugLog($"Created error indicator: {message}");
     }
 
     private void LoadSVGFile(string filePath)
@@ -278,6 +431,35 @@ public class FileListManager : MonoBehaviour
                 }
             }
 
+            // Parse <rect> elements (FIXED: Convert rectangles to lines)
+            foreach (System.Xml.XmlNode node in xmlDoc.GetElementsByTagName("rect"))
+            {
+                if (float.TryParse(node.Attributes["x"]?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out float x) &&
+                    float.TryParse(node.Attributes["y"]?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out float y) &&
+                    float.TryParse(node.Attributes["width"]?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out float width) &&
+                    float.TryParse(node.Attributes["height"]?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out float height))
+                {
+                    // Draw rectangle as 4 lines
+                    Vector2 topLeft = new Vector2(x, -y);
+                    Vector2 topRight = new Vector2(x + width, -y);
+                    Vector2 bottomRight = new Vector2(x + width, -(y + height));
+                    Vector2 bottomLeft = new Vector2(x, -(y + height));
+
+                    // Top line
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = topLeft });
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = topRight });
+                    // Right line
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = topRight });
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = bottomRight });
+                    // Bottom line
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = bottomRight });
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = bottomLeft });
+                    // Left line
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = bottomLeft });
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = topLeft });
+                }
+            }
+
             // Parse <circle> elements
             foreach (System.Xml.XmlNode node in xmlDoc.GetElementsByTagName("circle"))
             {
@@ -289,38 +471,50 @@ public class FileListManager : MonoBehaviour
                 }
             }
 
-            // Parse <polyline> elements
+            // Parse <polyline> elements (FIXED: Better handling)
             foreach (System.Xml.XmlNode node in xmlDoc.GetElementsByTagName("polyline"))
             {
                 string pointsAttr = node.Attributes["points"]?.Value;
                 if (!string.IsNullOrEmpty(pointsAttr))
                 {
-                    string[] pairs = pointsAttr.Split(new[] { ' ', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                    Vector2? lastPoint = null;
-                    foreach (string pair in pairs)
+                    var points = ParseSvgPoints(pointsAttr);
+                    if (points.Count > 0)
                     {
-                        var coords = pair.Split(',');
-                        if (coords.Length == 2 &&
-                            float.TryParse(coords[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float px) &&
-                            float.TryParse(coords[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float py))
+                        commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = new Vector2(points[0].x, -points[0].y) });
+                        for (int i = 1; i < points.Count; i++)
                         {
-                            Vector2 pos = new Vector2(px, -py);
-                            if (lastPoint == null)
-                                commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = pos });
-                            else
-                                commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = pos });
-                            lastPoint = pos;
+                            commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = new Vector2(points[i].x, -points[i].y) });
                         }
                     }
                 }
             }
 
-            // ✅ Parse <path> elements
+            // Parse <polygon> elements (FIXED: Similar to polyline but close the shape)
+            foreach (System.Xml.XmlNode node in xmlDoc.GetElementsByTagName("polygon"))
+            {
+                string pointsAttr = node.Attributes["points"]?.Value;
+                if (!string.IsNullOrEmpty(pointsAttr))
+                {
+                    var points = ParseSvgPoints(pointsAttr);
+                    if (points.Count > 0)
+                    {
+                        commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = new Vector2(points[0].x, -points[0].y) });
+                        for (int i = 1; i < points.Count; i++)
+                        {
+                            commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = new Vector2(points[i].x, -points[i].y) });
+                        }
+                        // Close the polygon
+                        commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = new Vector2(points[0].x, -points[0].y) });
+                    }
+                }
+            }
+
+            // Parse <path> elements (IMPROVED)
             foreach (System.Xml.XmlNode node in xmlDoc.GetElementsByTagName("path"))
             {
                 string d = node.Attributes["d"]?.Value;
                 if (!string.IsNullOrEmpty(d))
-                    ParseSvgPath(d, commands);
+                    ParseSvgPathImproved(d, commands);
             }
 
             DebugLog($"SVG produced {commands.Count} drawing commands");
@@ -340,48 +534,74 @@ public class FileListManager : MonoBehaviour
         }
     }
 
-    // COMPLETE DXF PARSER
+    // NEW: Helper method to parse SVG points attribute
+    private List<Vector2> ParseSvgPoints(string pointsAttr)
+    {
+        List<Vector2> points = new List<Vector2>();
+
+        // Replace commas with spaces and split
+        string cleaned = pointsAttr.Replace(',', ' ');
+        string[] values = cleaned.Split(new char[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+        for (int i = 0; i < values.Length - 1; i += 2)
+        {
+            if (float.TryParse(values[i], NumberStyles.Float, CultureInfo.InvariantCulture, out float x) &&
+                float.TryParse(values[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y))
+            {
+                points.Add(new Vector2(x, y));
+            }
+        }
+
+        return points;
+    }
+
+    // COMPLETE DXF PARSER (IMPROVED to handle entity separation better)
     private List<DrawingCommand> ParseDXFComplete(string content)
     {
         DebugLog("=== ParseDXFComplete ===");
         List<DrawingCommand> commands = new List<DrawingCommand>();
         string[] lines = content.Split(new char[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
 
-        DebugLog($"DXF has {lines.Length} lines");
+        bool inEntitiesSection = false;
 
-        for (int i = 0; i < lines.Length; i++)
+        for (int i = 0; i < lines.Length - 1; i++)
         {
             string line = lines[i].Trim();
 
-            // Look for entity section
-            if (line == "ENTITIES" || line == "0")
+            if (line == "ENTITIES")
             {
-                if (line == "0" && i + 1 < lines.Length)
-                {
-                    string entityType = lines[i + 1].Trim().ToUpperInvariant();
+                inEntitiesSection = true;
+                continue;
+            }
 
-                    switch (entityType)
-                    {
-                        case "LINE":
-                            commands.AddRange(ParseDXFLine(lines, i));
-                            break;
-                        case "CIRCLE":
-                            commands.AddRange(ParseDXFCircle(lines, i));
-                            break;
-                        case "ARC":
-                            commands.AddRange(ParseDXFArc(lines, i));
-                            break;
-                        case "LWPOLYLINE":
-                        case "POLYLINE":
-                            commands.AddRange(ParseDXFPolyline(lines, i));
-                            break;
-                        case "SPLINE":
-                            commands.AddRange(ParseDXFSpline(lines, i));
-                            break;
-                        case "ELLIPSE":
-                            commands.AddRange(ParseDXFEllipse(lines, i));
-                            break;
-                    }
+            if (inEntitiesSection && (line == "ENDSEC" || line == "EOF"))
+            {
+                break;
+            }
+
+            // Only parse entities within ENTITIES section
+            if (inEntitiesSection && line == "0" && i + 1 < lines.Length)
+            {
+                string entityType = lines[i + 1].Trim().ToUpperInvariant();
+
+                switch (entityType)
+                {
+                    case "LINE":
+                        var lineCommands = ParseDXFLineEntity(lines, i);
+                        commands.AddRange(lineCommands);
+                        break;
+                    case "CIRCLE":
+                        var circleCommands = ParseDXFCircleEntity(lines, i);
+                        commands.AddRange(circleCommands);
+                        break;
+                    case "LWPOLYLINE":
+                        var polyCommands = ParseDXFPolylineEntity(lines, i);
+                        commands.AddRange(polyCommands);
+                        break;
+                    case "ARC":
+                        var arcCommands = ParseDXFArcEntity(lines, i);
+                        commands.AddRange(arcCommands);
+                        break;
                 }
             }
         }
@@ -389,25 +609,218 @@ public class FileListManager : MonoBehaviour
         DebugLog($"Complete parsing found {commands.Count} commands");
         return commands;
     }
+    private List<DrawingCommand> ParseDXFLineEntity(string[] lines, int startIndex)
+    {
+        List<DrawingCommand> commands = new List<DrawingCommand>();
 
-    // SIMPLIFIED DXF PARSER - More Robust
+        // Find the end of this entity
+        int endIndex = FindEntityEnd(lines, startIndex);
+
+        Vector2 start = Vector2.zero, end = Vector2.zero;
+        bool hasStart = false, hasEnd = false;
+
+        for (int i = startIndex + 2; i < endIndex && i < lines.Length - 1; i++)
+        {
+            string code = lines[i].Trim();
+            if (i + 1 >= lines.Length) break;
+            string value = lines[i + 1].Trim();
+
+            switch (code)
+            {
+                case "10": // Start X
+                    if (TryParseDxfNumber(value, out float sx)) { start.x = sx; }
+                    break;
+                case "20": // Start Y  
+                    if (TryParseDxfNumber(value, out float sy)) { start.y = sy; hasStart = true; }
+                    break;
+                case "11": // End X
+                    if (TryParseDxfNumber(value, out float ex)) { end.x = ex; }
+                    break;
+                case "21": // End Y
+                    if (TryParseDxfNumber(value, out float ey)) { end.y = ey; hasEnd = true; }
+                    break;
+            }
+        }
+
+        if (hasStart && hasEnd && IsFinite(start) && IsFinite(end))
+        {
+            commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = start });
+            commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = end });
+            DebugLog($"LINE: ({start.x}, {start.y}) to ({end.x}, {end.y})");
+        }
+
+        return commands;
+    }
+
+    private List<DrawingCommand> ParseDXFCircleEntity(string[] lines, int startIndex)
+    {
+        List<DrawingCommand> commands = new List<DrawingCommand>();
+
+        int endIndex = FindEntityEnd(lines, startIndex);
+
+        Vector2 center = Vector2.zero;
+        float radius = 0f;
+        bool hasCenter = false, hasRadius = false;
+
+        for (int i = startIndex + 2; i < endIndex && i < lines.Length - 1; i++)
+        {
+            string code = lines[i].Trim();
+            if (i + 1 >= lines.Length) break;
+            string value = lines[i + 1].Trim();
+
+            switch (code)
+            {
+                case "10": // Center X
+                    if (TryParseDxfNumber(value, out float cx)) { center.x = cx; }
+                    break;
+                case "20": // Center Y
+                    if (TryParseDxfNumber(value, out float cy)) { center.y = cy; hasCenter = true; }
+                    break;
+                case "40": // Radius
+                    if (TryParseDxfNumber(value, out float r)) { radius = r; hasRadius = true; }
+                    break;
+            }
+        }
+
+        if (hasCenter && hasRadius && IsFinite(center) && radius > 0)
+        {
+            commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.Circle, position = center, radius = radius });
+            DebugLog($"CIRCLE: Center({center.x}, {center.y}) Radius={radius}");
+        }
+
+        return commands;
+    }
+
+    private List<DrawingCommand> ParseDXFPolylineEntity(string[] lines, int startIndex)
+    {
+        List<DrawingCommand> commands = new List<DrawingCommand>();
+
+        int endIndex = FindEntityEnd(lines, startIndex);
+        List<Vector2> vertices = new List<Vector2>();
+
+        for (int i = startIndex + 2; i < endIndex && i < lines.Length - 3; i++)
+        {
+            string code = lines[i].Trim();
+            if (code == "10" && i + 2 < lines.Length && lines[i + 2].Trim() == "20")
+            {
+                string xValue = lines[i + 1].Trim();
+                string yValue = lines[i + 3].Trim();
+
+                if (TryParseDxfNumber(xValue, out float x) && TryParseDxfNumber(yValue, out float y))
+                {
+                    Vector2 vertex = new Vector2(x, y);
+                    if (IsFinite(vertex))
+                    {
+                        vertices.Add(vertex);
+                        DebugLog($"POLYLINE vertex: ({x}, {y})");
+                    }
+                }
+            }
+        }
+
+        if (vertices.Count > 1)
+        {
+            commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = vertices[0] });
+            for (int i = 1; i < vertices.Count; i++)
+            {
+                commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = vertices[i] });
+            }
+            DebugLog($"POLYLINE: {vertices.Count} vertices");
+        }
+
+        return commands;
+    }
+
+    private List<DrawingCommand> ParseDXFArcEntity(string[] lines, int startIndex)
+    {
+        List<DrawingCommand> commands = new List<DrawingCommand>();
+
+        int endIndex = FindEntityEnd(lines, startIndex);
+
+        Vector2 center = Vector2.zero;
+        float radius = 0f, startAngle = 0f, endAngle = 0f;
+        bool hasCenter = false, hasRadius = false, hasAngles = false;
+
+        for (int i = startIndex + 2; i < endIndex && i < lines.Length - 1; i++)
+        {
+            string code = lines[i].Trim();
+            if (i + 1 >= lines.Length) break;
+            string value = lines[i + 1].Trim();
+
+            switch (code)
+            {
+                case "10":
+                    if (TryParseDxfNumber(value, out float cx)) { center.x = cx; }
+                    break;
+                case "20":
+                    if (TryParseDxfNumber(value, out float cy)) { center.y = cy; hasCenter = true; }
+                    break;
+                case "40":
+                    if (TryParseDxfNumber(value, out float r)) { radius = r; hasRadius = true; }
+                    break;
+                case "50":
+                    if (TryParseDxfNumber(value, out float sa)) { startAngle = sa; }
+                    break;
+                case "51":
+                    if (TryParseDxfNumber(value, out float ea)) { endAngle = ea; hasAngles = true; }
+                    break;
+            }
+        }
+
+        if (hasCenter && hasRadius && hasAngles && IsFinite(center) && radius > 0)
+        {
+            // Convert arc to line segments
+            int segments = 16;
+            Vector2 firstPoint = center + new Vector2(radius * Mathf.Cos(startAngle * Mathf.Deg2Rad),
+                                                     radius * Mathf.Sin(startAngle * Mathf.Deg2Rad));
+            commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = firstPoint });
+
+            for (int i = 1; i <= segments; i++)
+            {
+                float angle = (startAngle + (endAngle - startAngle) * i / segments) * Mathf.Deg2Rad;
+                Vector2 point = center + new Vector2(radius * Mathf.Cos(angle), radius * Mathf.Sin(angle));
+                commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = point });
+            }
+
+            DebugLog($"ARC: Center({center.x}, {center.y}) R={radius} {startAngle}° to {endAngle}°");
+        }
+
+        return commands;
+    }
+
+    // Helper method to find where an entity ends
+    private int FindEntityEnd(string[] lines, int startIndex)
+    {
+        for (int i = startIndex + 2; i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "0")
+            {
+                return i;
+            }
+        }
+        return lines.Length;
+    }
+
+
+
+    // SIMPLIFIED DXF PARSER - More Robust (IMPROVED to avoid connecting unrelated points)
     private List<DrawingCommand> ParseDXFSimplified(string content)
     {
         DebugLog("=== ParseDXFSimplified ===");
         List<DrawingCommand> commands = new List<DrawingCommand>();
 
-        // Extract all coordinate pairs using robust parsing
-        List<Vector2> allPoints = ExtractAllCoordinates(content);
-        DebugLog($"Found {allPoints.Count} coordinate points");
+        // Extract coordinates by entity to avoid connecting unrelated points
+        List<List<Vector2>> entityGroups = ExtractCoordinatesByEntity(content);
 
-        if (allPoints.Count > 0)
+        foreach (var group in entityGroups)
         {
-            // Connect all points as a continuous path
-            commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = allPoints[0] });
-
-            for (int i = 1; i < allPoints.Count; i++)
+            if (group.Count > 0)
             {
-                commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = allPoints[i] });
+                commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = group[0] });
+                for (int i = 1; i < group.Count; i++)
+                {
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = group[i] });
+                }
             }
         }
 
@@ -429,6 +842,75 @@ public class FileListManager : MonoBehaviour
         }
 
         return commands;
+    }
+
+    // NEW: Extract coordinates grouped by entity to avoid connecting unrelated points
+    private List<List<Vector2>> ExtractCoordinatesByEntity(string content)
+    {
+        List<List<Vector2>> entityGroups = new List<List<Vector2>>();
+        string[] lines = content.Split(new char[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+
+        List<Vector2> currentGroup = new List<Vector2>();
+        bool inEntitySection = false;
+
+        for (int i = 0; i < lines.Length - 3; i++)
+        {
+            string line = lines[i].Trim();
+
+            // Check for new entity
+            if (line == "0" && i + 1 < lines.Length)
+            {
+                string entityType = lines[i + 1].Trim().ToUpperInvariant();
+
+                // If we were building a group, save it
+                if (currentGroup.Count > 0)
+                {
+                    entityGroups.Add(new List<Vector2>(currentGroup));
+                    currentGroup.Clear();
+                }
+
+                // Check if this is a drawable entity
+                inEntitySection = (entityType == "LINE" || entityType == "LWPOLYLINE" ||
+                                 entityType == "POLYLINE" || entityType == "ARC" ||
+                                 entityType == "SPLINE");
+                continue;
+            }
+
+            if (!inEntitySection) continue;
+
+            string code = line;
+            string value = lines[i + 1].Trim();
+
+            // Look for X coordinates (code 10, 11, etc.)
+            if ((code == "10" || code == "11") && i + 2 < lines.Length)
+            {
+                string nextCode = lines[i + 2].Trim();
+                string nextValue = lines[i + 3].Trim();
+
+                // Check if next is Y coordinate (code 20, 21, etc.)
+                if ((nextCode == "20" || nextCode == "21"))
+                {
+                    if (TryParseDxfNumber(value, out float x) &&
+                        TryParseDxfNumber(nextValue, out float y))
+                    {
+                        Vector2 p = new Vector2(x, y);
+                        if (IsFinite(p))
+                        {
+                            currentGroup.Add(p);
+                            DebugLog($"Found coordinate in entity: ({x}, {y})");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Don't forget the last group
+        if (currentGroup.Count > 0)
+        {
+            entityGroups.Add(currentGroup);
+        }
+
+        return entityGroups;
     }
 
     private List<Vector2> ExtractAllCoordinates(string content)
@@ -507,14 +989,25 @@ public class FileListManager : MonoBehaviour
         return circles;
     }
 
-    // Individual entity parsers
+    // Individual entity parsers (IMPROVED to handle entity boundaries better)
     private List<DrawingCommand> ParseDXFLine(string[] lines, int startIndex)
     {
         List<DrawingCommand> commands = new List<DrawingCommand>();
         Vector2 start = Vector2.zero, end = Vector2.zero;
         bool sx = false, sy = false, ex = false, ey = false;
 
-        for (int i = startIndex + 1; i < startIndex + 20 && i < lines.Length - 1; i++)
+        // Look for the end of this entity
+        int endIndex = startIndex + 30;
+        for (int i = startIndex + 2; i < startIndex + 50 && i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "0")
+            {
+                endIndex = i;
+                break;
+            }
+        }
+
+        for (int i = startIndex + 1; i < endIndex && i < lines.Length - 1; i++)
         {
             string code = lines[i].Trim();
             string value = lines[i + 1].Trim();
@@ -541,7 +1034,18 @@ public class FileListManager : MonoBehaviour
         float radius = 0f;
         bool hasX = false, hasY = false, hasR = false;
 
-        for (int i = startIndex + 1; i < startIndex + 15 && i < lines.Length - 1; i++)
+        // Look for the end of this entity
+        int endIndex = startIndex + 20;
+        for (int i = startIndex + 2; i < startIndex + 30 && i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "0")
+            {
+                endIndex = i;
+                break;
+            }
+        }
+
+        for (int i = startIndex + 1; i < endIndex && i < lines.Length - 1; i++)
         {
             string code = lines[i].Trim();
             string value = lines[i + 1].Trim();
@@ -567,7 +1071,18 @@ public class FileListManager : MonoBehaviour
         float radius = 0f, startAngle = 0f, endAngle = 0f;
         bool hasX = false, hasY = false, hasR = false, hasSA = false, hasEA = false;
 
-        for (int i = startIndex + 1; i < startIndex + 20 && i < lines.Length - 1; i++)
+        // Look for the end of this entity
+        int endIndex = startIndex + 25;
+        for (int i = startIndex + 2; i < startIndex + 40 && i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "0")
+            {
+                endIndex = i;
+                break;
+            }
+        }
+
+        for (int i = startIndex + 1; i < endIndex && i < lines.Length - 1; i++)
         {
             string code = lines[i].Trim();
             string value = lines[i + 1].Trim();
@@ -605,22 +1120,33 @@ public class FileListManager : MonoBehaviour
         List<DrawingCommand> commands = new List<DrawingCommand>();
         List<Vector2> points = new List<Vector2>();
 
-        for (int i = startIndex + 1; i < lines.Length && i < startIndex + 500; i++)
+        // Look for the end of this entity - polylines can be quite long
+        int endIndex = startIndex + 500;
+        for (int i = startIndex + 2; i < startIndex + 1000 && i < lines.Length; i++)
         {
-            if (lines[i].Trim() == "0") break;
+            if (lines[i].Trim() == "0")
+            {
+                endIndex = i;
+                break;
+            }
+        }
 
+        for (int i = startIndex + 1; i < endIndex && i < lines.Length - 3; i++)
+        {
             string code = lines[i].Trim();
             string value = lines[i + 1].Trim();
 
-            if (lines[i].Trim() == "0")
-                break;
-
-            if (code == "10" && lines[i + 2].Trim() == "20")
+            // Look for coordinate pairs
+            if (code == "10" && i + 2 < lines.Length)
             {
-                if (TryParseDxfNumber(value, out float x) && TryParseDxfNumber(lines[i + 3].Trim(), out float y))
+                string nextCode = lines[i + 2].Trim();
+                if (nextCode == "20" && i + 3 < lines.Length)
                 {
-                    Vector2 p = new Vector2(x, y);
-                    if (IsFinite(p)) points.Add(p);
+                    if (TryParseDxfNumber(value, out float x) && TryParseDxfNumber(lines[i + 3].Trim(), out float y))
+                    {
+                        Vector2 p = new Vector2(x, y);
+                        if (IsFinite(p)) points.Add(p);
+                    }
                 }
             }
         }
@@ -640,7 +1166,7 @@ public class FileListManager : MonoBehaviour
 
     private List<DrawingCommand> ParseDXFSpline(string[] lines, int startIndex)
     {
-        // Similar to polyline but for splines
+        // Similar to polyline but for splines - extract control points
         return ParseDXFPolyline(lines, startIndex);
     }
 
@@ -662,7 +1188,7 @@ public class FileListManager : MonoBehaviour
         }
 
         // Method 2: Create a simple text visualization
-        CreateTextVisualization(content);
+       // CreateTextVisualization(content);
 
         // Method 3: Log structure for manual inspection
         LogDXFStructure(content);
@@ -706,57 +1232,150 @@ public class FileListManager : MonoBehaviour
         currentDrawings.Add(textObj);
     }
 
-    private void ParseSvgPath(string d, List<DrawingCommand> commands)
+    // IMPROVED SVG Path Parser
+    private void ParseSvgPathImproved(string d, List<DrawingCommand> commands)
     {
         if (string.IsNullOrEmpty(d)) return;
 
-        string[] tokens = d.Split(new char[] { ' ', ',' }, System.StringSplitOptions.RemoveEmptyEntries);
-        int i = 0;
-        char currentCmd = 'M';
+        // Clean the path data
+        d = d.Replace(",", " ");
+        d = Regex.Replace(d, @"([MmLlHhVvCcSsQqTtAaZz])", " $1 ");
+        string[] tokens = d.Split(new char[] { ' ', '\t', '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
 
-        Vector2 lastPos = Vector2.zero;
+        Vector2 currentPos = Vector2.zero;
+        Vector2 lastControlPoint = Vector2.zero;
+        Vector2 pathStart = Vector2.zero;
+        char currentCommand = 'M';
+        bool isRelative = false;
+
+        int i = 0;
         while (i < tokens.Length)
         {
-            string token = tokens[i];
+            string token = tokens[i].Trim();
 
-            // Command?
-            if (char.IsLetter(token[0]))
+            // Check if it's a command
+            if (char.IsLetter(token[0]) && token.Length == 1)
             {
-                currentCmd = char.ToUpperInvariant(token[0]);
+                currentCommand = token[0];
+                isRelative = char.IsLower(currentCommand);
+                currentCommand = char.ToUpperInvariant(currentCommand);
                 i++;
                 continue;
             }
 
-            // Numbers
-            if (float.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out float x) &&
-                i + 1 < tokens.Length &&
-                float.TryParse(tokens[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y))
+            // Parse based on current command
+            switch (currentCommand)
             {
-                Vector2 pos = new Vector2(x, y);
+                case 'M': // MoveTo
+                    if (i + 1 < tokens.Length &&
+                        float.TryParse(tokens[i], NumberStyles.Float, CultureInfo.InvariantCulture, out float mx) &&
+                        float.TryParse(tokens[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out float my))
+                    {
+                        Vector2 pos = new Vector2(mx, -my);
+                        if (isRelative) pos += currentPos;
 
-                if (currentCmd == 'M')
-                {
-                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = pos });
-                    lastPos = pos;
-                    currentCmd = 'L'; // implicit line after move
-                }
-                else if (currentCmd == 'L')
-                {
-                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = pos });
-                    lastPos = pos;
-                }
-                else if (currentCmd == 'Z')
-                {
-                    // Close path: connect to first point
-                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = pos });
-                }
+                        commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.MoveTo, position = pos });
+                        currentPos = pos;
+                        pathStart = pos;
+                        currentCommand = 'L'; // After moveto, subsequent coordinates are lineto
+                        i += 2;
+                    }
+                    else i++;
+                    break;
 
-                i += 2;
+                case 'L': // LineTo
+                    if (i + 1 < tokens.Length &&
+                        float.TryParse(tokens[i], NumberStyles.Float, CultureInfo.InvariantCulture, out float lx) &&
+                        float.TryParse(tokens[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out float ly))
+                    {
+                        Vector2 pos = new Vector2(lx, -ly);
+                        if (isRelative) pos += currentPos;
+
+                        commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = pos });
+                        currentPos = pos;
+                        i += 2;
+                    }
+                    else i++;
+                    break;
+
+                case 'H': // Horizontal LineTo
+                    if (float.TryParse(tokens[i], NumberStyles.Float, CultureInfo.InvariantCulture, out float hx))
+                    {
+                        Vector2 pos = new Vector2(isRelative ? currentPos.x + hx : hx, currentPos.y);
+                        commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = pos });
+                        currentPos = pos;
+                        i++;
+                    }
+                    else i++;
+                    break;
+
+                case 'V': // Vertical LineTo
+                    if (float.TryParse(tokens[i], NumberStyles.Float, CultureInfo.InvariantCulture, out float vy))
+                    {
+                        Vector2 pos = new Vector2(currentPos.x, isRelative ? currentPos.y - vy : -vy);
+                        commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = pos });
+                        currentPos = pos;
+                        i++;
+                    }
+                    else i++;
+                    break;
+
+                case 'Z': // ClosePath
+                    commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = pathStart });
+                    currentPos = pathStart;
+                    i++;
+                    break;
+
+                case 'C': // CubicBezier - approximate with line segments
+                    if (i + 5 < tokens.Length &&
+                        float.TryParse(tokens[i], NumberStyles.Float, CultureInfo.InvariantCulture, out float c1x) &&
+                        float.TryParse(tokens[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out float c1y) &&
+                        float.TryParse(tokens[i + 2], NumberStyles.Float, CultureInfo.InvariantCulture, out float c2x) &&
+                        float.TryParse(tokens[i + 3], NumberStyles.Float, CultureInfo.InvariantCulture, out float c2y) &&
+                        float.TryParse(tokens[i + 4], NumberStyles.Float, CultureInfo.InvariantCulture, out float cx) &&
+                        float.TryParse(tokens[i + 5], NumberStyles.Float, CultureInfo.InvariantCulture, out float cy))
+                    {
+                        Vector2 cp1 = new Vector2(c1x, -c1y);
+                        Vector2 cp2 = new Vector2(c2x, -c2y);
+                        Vector2 endPos = new Vector2(cx, -cy);
+
+                        if (isRelative)
+                        {
+                            cp1 += currentPos;
+                            cp2 += currentPos;
+                            endPos += currentPos;
+                        }
+
+                        // Approximate cubic bezier with line segments
+                        ApproximateCubicBezier(currentPos, cp1, cp2, endPos, commands);
+                        currentPos = endPos;
+                        lastControlPoint = cp2;
+                        i += 6;
+                    }
+                    else i++;
+                    break;
+
+                default:
+                    i++;
+                    break;
             }
-            else
-            {
-                i++;
-            }
+        }
+    }
+
+    private void ApproximateCubicBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, List<DrawingCommand> commands)
+    {
+        int segments = 10;
+        for (int i = 1; i <= segments; i++)
+        {
+            float t = (float)i / segments;
+            float oneMinusT = 1f - t;
+
+            Vector2 point = oneMinusT * oneMinusT * oneMinusT * p0 +
+                           3f * oneMinusT * oneMinusT * t * p1 +
+                           3f * oneMinusT * t * t * p2 +
+                           t * t * t * p3;
+
+            commands.Add(new DrawingCommand { type = DrawingCommand.CommandType.LineTo, position = point });
         }
     }
 
@@ -832,10 +1451,19 @@ public class FileListManager : MonoBehaviour
 
         foreach (var cmd in safe)
         {
-            min = Vector2.Min(min, cmd.position);
-            max = Vector2.Max(max, cmd.position);
+            Vector2 pos = cmd.position;
+            if (cmd.type == DrawingCommand.CommandType.Circle)
+            {
+                // Include circle bounds
+                min = Vector2.Min(min, pos - Vector2.one * cmd.radius);
+                max = Vector2.Max(max, pos + Vector2.one * cmd.radius);
+            }
+            else
+            {
+                min = Vector2.Min(min, pos);
+                max = Vector2.Max(max, pos);
+            }
         }
-
 
         Vector2 drawingSize = max - min;
         // Guard against zero-size to avoid division by zero
@@ -858,47 +1486,101 @@ public class FileListManager : MonoBehaviour
 
         DebugLog($"Drawing bounds: min={min}, max={max}, size={drawingSize}, scale={scale}");
 
-        LineRenderer currentLine = null;
-        List<Vector3> points = new List<Vector3>();
+        // IMPROVED: Separate continuous paths to avoid unwanted lines
+        List<List<DrawingCommand>> paths = SeparatePaths(safe);
 
-        foreach (var cmd in safe)
+        foreach (var path in paths)
         {
-            Vector2 scaledPos = (cmd.position - drawingCenter) * scale + whiteboardCenter;
-            // Use positive Z offset to ensure drawing appears in front of whiteboard
-            Vector3 worldPos = drawingPlane.transform.TransformPoint(
-            new Vector3(scaledPos.x, scaledPos.y, importedDrawingZOffset)
-            );
-           
+            if (path.Count == 0) continue;
 
-            if (cmd.type == DrawingCommand.CommandType.MoveTo)
+            LineRenderer currentLine = null;
+            List<Vector3> points = new List<Vector3>();
+
+            foreach (var cmd in path)
             {
-                if (currentLine != null && points.Count > 1)
-                    FinishLineRenderer(currentLine, points);
+                Vector2 scaledPos = (cmd.position - drawingCenter) * scale + whiteboardCenter;
+                Vector3 worldPos = drawingPlane.transform.TransformPoint(
+                    new Vector3(scaledPos.x, scaledPos.y, importedDrawingZOffset)
+                );
 
-                currentLine = CreateNewLineRenderer();
-                points.Clear();
-                points.Add(worldPos);
+                if (cmd.type == DrawingCommand.CommandType.MoveTo)
+                {
+                    // Finish previous line if it exists
+                    if (currentLine != null && points.Count > 1)
+                        FinishLineRenderer(currentLine, points);
+
+                    // Start new line
+                    currentLine = CreateNewLineRenderer();
+                    points.Clear();
+                    points.Add(worldPos);
+                }
+                else if (cmd.type == DrawingCommand.CommandType.LineTo)
+                {
+                    if (currentLine == null)
+                    {
+                        currentLine = CreateNewLineRenderer();
+                        points.Clear();
+                    }
+                    points.Add(worldPos);
+                }
+                else if (cmd.type == DrawingCommand.CommandType.Circle)
+                {
+                    float scaledRadius = cmd.radius * scale;
+                    if (scaledRadius > 0f && float.IsFinite(scaledRadius))
+                        DrawCircleAsLineRenderer(scaledPos, scaledRadius);
+                }
+            }
+
+            // Finish the last line in this path
+            if (currentLine != null && points.Count > 1)
+            {
+                FinishLineRenderer(currentLine, points);
+            }
+        }
+    }
+
+    // NEW: Separate drawing commands into distinct paths to avoid connecting unrelated elements
+    private List<List<DrawingCommand>> SeparatePaths(List<DrawingCommand> commands)
+    {
+        List<List<DrawingCommand>> paths = new List<List<DrawingCommand>>();
+        List<DrawingCommand> currentPath = new List<DrawingCommand>();
+
+        foreach (var cmd in commands)
+        {
+            if (cmd.type == DrawingCommand.CommandType.Circle)
+            {
+                // Circles are standalone - finish current path and add circle as separate path
+                if (currentPath.Count > 0)
+                {
+                    paths.Add(new List<DrawingCommand>(currentPath));
+                    currentPath.Clear();
+                }
+                paths.Add(new List<DrawingCommand> { cmd });
+            }
+            else if (cmd.type == DrawingCommand.CommandType.MoveTo)
+            {
+                // MoveTo starts a new path - finish current and start new
+                if (currentPath.Count > 0)
+                {
+                    paths.Add(new List<DrawingCommand>(currentPath));
+                    currentPath.Clear();
+                }
+                currentPath.Add(cmd);
             }
             else if (cmd.type == DrawingCommand.CommandType.LineTo)
             {
-                if (currentLine == null)
-                    currentLine = CreateNewLineRenderer();
-                points.Add(worldPos);
-            }
-            else if (cmd.type == DrawingCommand.CommandType.Circle)
-            {
-                float scaledRadius = cmd.radius * scale;
-                if (scaledRadius > 0f && float.IsFinite(scaledRadius))
-                    DrawCircleAsLineRenderer(scaledPos, scaledRadius);
+                // LineTo continues current path
+                currentPath.Add(cmd);
             }
         }
 
-        if (currentLine != null && points.Count > 1)
+        // Don't forget the last path
+        if (currentPath.Count > 0)
         {
-            FinishLineRenderer(currentLine, points);
-            currentLine = null;
-            points.Clear();
+            paths.Add(currentPath);
         }
+
+        return paths;
     }
 
     private LineRenderer CreateNewLineRenderer()
@@ -930,6 +1612,11 @@ public class FileListManager : MonoBehaviour
             lr.positionCount = pts.Count;
             lr.SetPositions(pts.ToArray());
         }
+        else if (pts.Count == 1)
+        {
+            // Single point - don't display or make it a tiny line
+            lr.positionCount = 0;
+        }
     }
 
     private void DrawCircleAsLineRenderer(Vector2 center, float radius)
@@ -941,12 +1628,11 @@ public class FileListManager : MonoBehaviour
         for (int i = 0; i <= segments; i++)
         {
             float angle = (float)i / segments * 2f * Mathf.PI;
-                points[i] = drawingPlane.transform.TransformPoint(new Vector3(
-                 center.x + radius * Mathf.Cos(angle),
+            points[i] = drawingPlane.transform.TransformPoint(new Vector3(
+                center.x + radius * Mathf.Cos(angle),
                 center.y + radius * Mathf.Sin(angle),
                 importedDrawingZOffset
             ));
-
         }
 
         lr.positionCount = points.Length;
@@ -963,7 +1649,10 @@ public class FileListManager : MonoBehaviour
     private void ClearExistingButtons()
     {
         foreach (GameObject btn in instantiatedButtons)
-            if (btn != null) Destroy(btn);
+            if (btn != null && btn != fileButtonPrefab.gameObject)
+            {
+                Destroy(btn);
+            }
         instantiatedButtons.Clear();
     }
 
