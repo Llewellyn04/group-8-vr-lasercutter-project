@@ -5,7 +5,7 @@ public class ClearCanvas : MonoBehaviour
 {
     public Canvas mainCanvas;
 
-    public void ClearCanvas()
+    public void ClearCanvas1()
     {
         if (mainCanvas != null)
         {
