@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit;
 
 [System.Serializable] // Makes it show in Inspector
 public class VRDrawSettings
@@ -13,6 +14,8 @@ public class SplineVRDraw : MonoBehaviour
 {
     public Transform whiteboardPlane; // Assign this in Inspector (e.g., a flat GameObject like a quad)
     public float drawDistanceThreshold = 0.01f; // Max distance allowed to the board to draw
+    public XRController rightController; // Assign right-hand XR controller
+    public RedoUndoManager redoUndoManager; // Assign RedoUndoManager component
 
     [Header("Drawing Bounds")]
     public float maxWidth = 1.0f;  // Max width (centered on plane)
@@ -30,6 +33,20 @@ public class SplineVRDraw : MonoBehaviour
 
     void Update()
     {
+        // Check VR controller input (trigger button)
+        if (rightController != null)
+        {
+            rightController.inputDevice.TryGetFeatureValue(CommonUsages.triggerButton, out bool triggerPressed);
+            if (triggerPressed && !isDrawing)
+            {
+                StartDrawing();
+            }
+            else if (!triggerPressed && isDrawing)
+            {
+                StopDrawing();
+            }
+        }
+
         if (alwaysDraw || isDrawing)
         {
             UpdateDrawing();
@@ -73,6 +90,7 @@ public class SplineVRDraw : MonoBehaviour
             }
         }
     }
+
     public void StartDrawing()
     {
         GameObject lineObj = new GameObject("VR_Drawing");
@@ -94,6 +112,11 @@ public class SplineVRDraw : MonoBehaviour
         if (currentLine != null && currentLine.positionCount > 2)
         {
             currentLine.loop = true; // Close the shape
+            if (redoUndoManager != null)
+            {
+                redoUndoManager.RegisterLine(currentLine.gameObject); // Register with RedoUndoManager
+            }
         }
+        currentLine = null;
     }
 }
