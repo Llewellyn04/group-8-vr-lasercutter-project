@@ -1,7 +1,8 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit;
 
-[System.Serializable] // Makes it show in Inspector
+[System.Serializable]
 public class VRDrawSettings
 {
     public Material lineMaterial;
@@ -11,70 +12,81 @@ public class VRDrawSettings
 
 public class SplineVRDraw : MonoBehaviour
 {
-    public Transform whiteboardPlane; // Assign this in Inspector (e.g., a flat GameObject like a quad)
-    public float drawDistanceThreshold = 0.01f; // Max distance allowed to the board to draw
+    [Header("References")]
+    public Transform whiteboardPlane;
+    public Transform drawingTip;
+    public XRController rightController;
+    public RedoUndoManager redoUndoManager;
+
+    [Header("Drawing Settings")]
+    public VRDrawSettings settings;
+    public float drawDistanceThreshold = 0.01f;
 
     [Header("Drawing Bounds")]
-    public float maxWidth = 1.0f;  // Max width (centered on plane)
-    public float maxHeight = 1.0f; // Max height (centered on plane)
-
-    [Header("Drag References")]
-    public Transform drawingTip; // Drag your DrawingTip here
-    public VRDrawSettings settings;
+    public float maxWidth = 1.0f;
+    public float maxHeight = 1.0f;
 
     [Header("Debug")]
-    public bool alwaysDraw = false; // For testing without buttons
+    public bool alwaysDraw = false;
 
     private LineRenderer currentLine;
     private bool isDrawing = false;
+    private bool lastTriggerState = false;
 
     void Update()
     {
-        if (alwaysDraw || isDrawing)
+        if (rightController != null && rightController.inputDevice.isValid)
         {
-            UpdateDrawing();
+            rightController.inputDevice.TryGetFeatureValue(CommonUsages.triggerButton, out bool triggerPressed);
+
+            if (triggerPressed && !lastTriggerState && !isDrawing)
+                StartDrawing();
+            else if (!triggerPressed && lastTriggerState && isDrawing)
+                StopDrawing();
+
+            lastTriggerState = triggerPressed;
         }
+
+        if (isDrawing || alwaysDraw)
+            UpdateDrawing();
     }
 
     void UpdateDrawing()
     {
-        if (currentLine == null || whiteboardPlane == null) return;
+        if (currentLine == null || whiteboardPlane == null || drawingTip == null) return;
 
-        // Define the whiteboard plane
         Plane plane = new Plane(whiteboardPlane.forward, whiteboardPlane.position);
-
-        // Get tip position and direction
         Ray ray = new Ray(drawingTip.position - drawingTip.forward * 0.05f, drawingTip.forward);
 
         if (plane.Raycast(ray, out float enter))
         {
             Vector3 hitPoint = ray.GetPoint(enter);
-
-            // Project hitPoint onto plane's local space
             Vector3 localPoint = whiteboardPlane.InverseTransformPoint(hitPoint);
 
-            // Clamp localPoint to whiteboard bounds
             float halfWidth = maxWidth * 0.5f;
             float halfHeight = maxHeight * 0.5f;
             localPoint.x = Mathf.Clamp(localPoint.x, -halfWidth, halfWidth);
             localPoint.y = Mathf.Clamp(localPoint.y, -halfHeight, halfHeight);
-            localPoint.z = 0; // Ensure point is on the whiteboard surface
+            localPoint.z = 0f;
 
-            // Convert back to world space
             Vector3 clampedWorldPoint = whiteboardPlane.TransformPoint(localPoint);
 
-            // Only draw if the original hitPoint was within bounds
-            bool withinBounds = Mathf.Abs(localPoint.x) <= halfWidth && Mathf.Abs(localPoint.y) <= halfHeight;
-
-            if (withinBounds)
+            if (Mathf.Abs(localPoint.x) <= halfWidth && Mathf.Abs(localPoint.y) <= halfHeight)
             {
                 currentLine.positionCount++;
                 currentLine.SetPosition(currentLine.positionCount - 1, clampedWorldPoint);
             }
         }
     }
+
     public void StartDrawing()
     {
+        if (settings == null)
+        {
+            Debug.LogWarning("VRDrawSettings not assigned!");
+            return;
+        }
+
         GameObject lineObj = new GameObject("VR_Drawing");
         currentLine = lineObj.AddComponent<LineRenderer>();
 
@@ -86,14 +98,55 @@ public class SplineVRDraw : MonoBehaviour
         currentLine.positionCount = 0;
 
         isDrawing = true;
+        Debug.Log("Started Drawing");
     }
 
     public void StopDrawing()
     {
-        isDrawing = false;
-        if (currentLine != null && currentLine.positionCount > 2)
+        Debug.Log("StopDrawing() called!"); // DEBUG
+
+        if (!isDrawing)
         {
-            currentLine.loop = true; // Close the shape
+            Debug.Log("Not drawing, returning early"); // DEBUG
+            return;
         }
+
+        isDrawing = false;
+
+        if (currentLine != null)
+        {
+            if (currentLine.positionCount > 1)
+            {
+                currentLine.loop = false;
+
+                if (redoUndoManager != null)
+                {
+                    // Store reference to GameObject before setting currentLine to null
+                    GameObject lineObj = currentLine.gameObject;
+                    redoUndoManager.RegisterLine(lineObj);
+                    Debug.Log($"Line registered: {lineObj.name}. Undo stack count: {redoUndoManager.UndoCount}");
+                }
+                else
+                {
+                    Debug.LogWarning("RedoUndoManager not assigned!");
+                }
+            }
+            else
+            {
+                Destroy(currentLine.gameObject);
+                Debug.Log("Line discarded (too few points).");
+            }
+        }
+
+        currentLine = null;
+        Debug.Log("Stopped Drawing");
+    }
+
+    public void ToggleDrawing()
+    {
+        if (isDrawing)
+            StopDrawing();
+        else
+            StartDrawing();
     }
 }
