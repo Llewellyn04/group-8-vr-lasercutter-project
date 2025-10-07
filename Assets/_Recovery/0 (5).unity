@@ -1612,7 +1612,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 159880334}
-  - component: {fileID: 159880335}
+  - component: {fileID: 159880333}
   m_Layer: 0
   m_Name: DXFExportManager
   m_TagString: Untagged
@@ -1620,6 +1620,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &159880333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 159880332}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5dbbb8f600d5fe14d8ae5d18eedadb0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExportDXF
+  drawingPoints:
+  - {x: 0, y: 0}
+  fileName: drawing.dxf
 --- !u!4 &159880334
 Transform:
   m_ObjectHideFlags: 0
@@ -1635,25 +1650,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &159880335
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 159880332}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5dbbb8f600d5fe14d8ae5d18eedadb0a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ExportDXF
-  whiteboardPlane: {fileID: 599937833}
-  fileName: whiteboard_drawing.dxf
-  autoCalculateBounds: 1
-  boundsMin: {x: -0.5, y: -0.5}
-  boundsMax: {x: 0.5, y: 0.5}
-  dxfScale: 1000
-  showDebugLogs: 1
 --- !u!1001 &165533731
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7483,6 +7479,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 419394395}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &758674512
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7979,7 +7987,7 @@ GameObject:
   - component: {fileID: 834481279}
   - component: {fileID: 834481278}
   m_Layer: 0
-  m_Name: SVGExportManager
+  m_Name: ExportManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7997,14 +8005,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 859eeb76a643de445a74276b44d915b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExportSVG
-  whiteboardPlane: {fileID: 599937833}
+  drawingPoints: []
   canvasWidth: 1000
   canvasHeight: 1000
+  strokeWidth: 2
+  strokeColor: black
   fileName: drawing.svg
-  autoCalculateBounds: 1
-  boundsMin: {x: -0.5, y: -0.5}
-  boundsMax: {x: 0.5, y: 0.5}
-  showDebugLogs: 1
 --- !u!4 &834481279
 Transform:
   m_ObjectHideFlags: 0
@@ -9826,7 +9832,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 159880335}
+      - m_Target: {fileID: 159880333}
         m_TargetAssemblyTypeName: ExportDXF, Assembly-CSharp
         m_MethodName: ExportToDXF
         m_Mode: 1
