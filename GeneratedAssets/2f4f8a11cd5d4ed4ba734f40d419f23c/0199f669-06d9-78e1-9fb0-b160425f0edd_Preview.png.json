@@ -1,0 +1,11 @@
+{
+    "asset": "2f4f8a11cd5d4ed4ba734f40d419f23c",
+    "fileName": "0199f669-06d9-78e1-9fb0-b160425f0edd_Preview.png",
+    "prompt": "generate a nice wood tiles foloor dark brown \n",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 470620026,
+    "w3CTraceId": "2e5db4cf228f109b227bfc6e20969af1",
+    "refinementMode": "Generation"
+}

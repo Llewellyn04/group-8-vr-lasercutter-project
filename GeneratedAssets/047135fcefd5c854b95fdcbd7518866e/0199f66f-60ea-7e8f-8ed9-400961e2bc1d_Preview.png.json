@@ -1,0 +1,11 @@
+{
+    "asset": "047135fcefd5c854b95fdcbd7518866e",
+    "fileName": "0199f66f-60ea-7e8f-8ed9-400961e2bc1d_Preview.png",
+    "prompt": "generate a nice blue and red texturered with patterns carpet",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 1608248381,
+    "w3CTraceId": "50f7a0ecb952d6b1aa39b2f19847b7c9",
+    "refinementMode": "Generation"
+}

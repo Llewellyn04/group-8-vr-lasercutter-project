@@ -1,0 +1,11 @@
+{
+    "asset": "d58ed9e145df7334fa7b724264efb76c",
+    "fileName": "0199f66c-b309-7d83-9bd1-b575fe26295c_Preview.png",
+    "prompt": "generate a dark brown with black wood use natural wood patterns\n",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 560096597,
+    "w3CTraceId": "2b08b15fc7db6e4c514cb38c70b12b58",
+    "refinementMode": "Generation"
+}
