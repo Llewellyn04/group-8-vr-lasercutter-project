@@ -683,7 +683,7 @@ MonoBehaviour:
   - {fileID: 3179476021053660316}
   - {fileID: 1690974795193997703}
   m_renderMode: 1
-  m_latencyOptimization: 0
+  m_latencyOptimization: 1
   m_autoColorSubmissionMode: 1
   m_colorSubmissionModes:
     m_List: 00000000
@@ -822,7 +822,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 076937beb8763d94790d2e9cc1248ac8, type: 3}
   m_Name: ARSessionFeature Standalone
   m_EditorClassIdentifier: 
-  m_enabled: 0
+  m_enabled: 1
   nameUi: 'Meta Quest: Session'
   version: 0.1.0
   featureIdInternal: com.unity.openxr.feature.arfoundation-meta-session
@@ -1115,7 +1115,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ec7ac3a07bc448fbb43bbcff14d5b12, type: 3}
   m_Name: ARRaycastFeature Standalone
   m_EditorClassIdentifier: 
-  m_enabled: 0
+  m_enabled: 1
   nameUi: 'Meta Quest: Raycasts'
   version: 0.1.0
   featureIdInternal: com.unity.openxr.feature.arfoundation-meta-raycast
