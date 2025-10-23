@@ -1,0 +1,11 @@
+{
+    "asset": "0e110d20d5827464b8df5716cdb01f9c",
+    "fileName": "0199f675-88b0-774d-99e3-52051ac97f24_Preview.png",
+    "prompt": "warehouse metal sheet",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 922100694,
+    "w3CTraceId": "b70e18980efe7115734c7705c1c9f8fa",
+    "refinementMode": "Generation"
+}

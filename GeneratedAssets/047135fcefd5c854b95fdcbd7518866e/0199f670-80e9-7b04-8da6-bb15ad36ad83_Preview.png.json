@@ -1,0 +1,11 @@
+{
+    "asset": "047135fcefd5c854b95fdcbd7518866e",
+    "fileName": "0199f670-80e9-7b04-8da6-bb15ad36ad83_Preview.png",
+    "prompt": "generate a nice blue and white and black texturered with patterns carpet",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 1743069431,
+    "w3CTraceId": "9ec7d4b84aa91c005c5e8b36c3d1cf18",
+    "refinementMode": "Generation"
+}

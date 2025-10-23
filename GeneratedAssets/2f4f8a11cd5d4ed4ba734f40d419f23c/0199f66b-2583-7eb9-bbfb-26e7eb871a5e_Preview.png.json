@@ -1,0 +1,11 @@
+{
+    "asset": "2f4f8a11cd5d4ed4ba734f40d419f23c",
+    "fileName": "0199f66b-2583-7eb9-bbfb-26e7eb871a5e_Preview.png",
+    "prompt": "generate a floor a concrete with epoxy on floor\n\n\n",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 1893903166,
+    "w3CTraceId": "340d21b4824258fd19b872fb0f5a0fca",
+    "refinementMode": "Generation"
+}

@@ -1,0 +1,11 @@
+{
+    "asset": "691db30be31e7d44da5091dff90a19fc",
+    "fileName": "0199f661-f429-728b-b62f-bc608608ef19_Preview.png",
+    "prompt": "make it brown",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 161678158,
+    "w3CTraceId": "52eb6162922bf512a488a61dbd612ab1",
+    "refinementMode": "Generation"
+}

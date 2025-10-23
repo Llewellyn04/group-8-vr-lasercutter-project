@@ -1,0 +1,11 @@
+{
+    "asset": "2f4f8a11cd5d4ed4ba734f40d419f23c",
+    "fileName": "0199f66a-60a6-7083-b443-084a4db29f1c_Preview.png",
+    "prompt": "generate a floor with small navy blue tiles \n\n",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 441042568,
+    "w3CTraceId": "ee89f81fed074c5b505607a5ab6f67d5",
+    "refinementMode": "Generation"
+}

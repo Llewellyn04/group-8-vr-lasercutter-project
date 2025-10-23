@@ -1,0 +1,11 @@
+{
+    "asset": "98a20c7c34ed5d74986eee6552b63de1",
+    "fileName": "0199f665-49ae-7d9a-a879-b3e17e304b25_Preview.png",
+    "prompt": "Generate a nice oak wood material for a table \n",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 619364126,
+    "w3CTraceId": "fbbad7bcba51ae7dec9f6d81e27091e6",
+    "refinementMode": "Generation"
+}

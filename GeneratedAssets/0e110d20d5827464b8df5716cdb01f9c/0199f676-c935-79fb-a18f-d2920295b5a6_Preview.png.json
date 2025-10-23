@@ -1,0 +1,11 @@
+{
+    "asset": "0e110d20d5827464b8df5716cdb01f9c",
+    "fileName": "0199f676-c935-79fb-a18f-d2920295b5a6_Preview.png",
+    "prompt": "light gray",
+    "negativePrompt": "",
+    "model": "575ecf67-4425-4939-97b9-5e138b8ee234",
+    "modelName": "Unity Texture2D",
+    "customSeed": 797639281,
+    "w3CTraceId": "182554f959072d3ccef9dd9673262285",
+    "refinementMode": "Generation"
+}
