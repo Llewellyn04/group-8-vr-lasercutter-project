@@ -2,11 +2,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
+using TMPro;
 
 public class ExportSVG : MonoBehaviour
 {
     [Header("References")]
     public Transform whiteboardPlane;
+    [Tooltip("Optional: UI Rect that holds TMP texts for the whiteboard")] public RectTransform whiteboardTextArea;
+    [Tooltip("Optional: Text manager that stores text history")] public WhiteboardTextManager textManager;
 
     [Header("SVG Settings")]
     public int canvasWidth = 1000;
@@ -58,7 +61,10 @@ public class ExportSVG : MonoBehaviour
 
         Debug.Log($"Exporting {drawings.Count} drawings");
 
-        string svgContent = GenerateSVGContent(drawings);
+        // Collect text entries
+        var texts = CollectTextEntries();
+
+        string svgContent = GenerateSVGContent(drawings, texts);
         string filePath = Path.Combine(Application.persistentDataPath, fileName);
 
         try
@@ -76,7 +82,7 @@ public class ExportSVG : MonoBehaviour
         }
     }
 
-    private string GenerateSVGContent(List<LineRenderer> drawings)
+    private string GenerateSVGContent(List<LineRenderer> drawings, List<TextEntry> texts)
     {
         var culture = System.Globalization.CultureInfo.InvariantCulture;
         StringBuilder svg = new StringBuilder();
@@ -135,6 +141,12 @@ public class ExportSVG : MonoBehaviour
                 pathData.Append($"{command} {svgX.ToString("F2", culture)} {svgY.ToString("F2", culture)} ");
             }
 
+            // Close the path if LineRenderer was a loop
+            if (line.loop)
+            {
+                pathData.Append("Z");
+            }
+
             svg.AppendLine($@"  <path d=""{pathData}""");
             svg.AppendLine($@"        fill=""none""");
             svg.AppendLine($@"        stroke=""{colorHex}""");
@@ -143,8 +155,72 @@ public class ExportSVG : MonoBehaviour
             svg.AppendLine($@"        stroke-linejoin=""round"" />");
         }
 
+        // Add text entries if provided
+        if (texts != null && texts.Count > 0)
+        {
+            foreach (var t in texts)
+            {
+                // Map UI anchoredPosition to SVG canvas
+                float svgX;
+                float svgY;
+                if (whiteboardTextArea != null)
+                {
+                    Vector2 size = whiteboardTextArea.rect.size;
+                    float u = (t.anchoredPosition.x + size.x * 0.5f) / Mathf.Max(1f, size.x);
+                    float v = (t.anchoredPosition.y + size.y * 0.5f) / Mathf.Max(1f, size.y);
+                    svgX = u * canvasWidth;
+                    svgY = (1f - v) * canvasHeight; // Flip Y to match SVG coords
+                }
+                else
+                {
+                    // Fallback: assume anchoredPosition already roughly in canvas pixels centered
+                    svgX = (canvasWidth * 0.5f) + t.anchoredPosition.x;
+                    svgY = (canvasHeight * 0.5f) - t.anchoredPosition.y;
+                }
+
+                string safe = System.Security.SecurityElement.Escape(t.text ?? string.Empty);
+                int fontSize = Mathf.Max(1, t.fontSize);
+                svg.AppendLine($@"  <text x=""{svgX.ToString("F2", culture)}"" y=""{svgY.ToString("F2", culture)}"" font-size=""{fontSize}"" font-family=""Arial"" fill=""#000000"">{safe}</text>");
+            }
+        }
+
         svg.AppendLine("</svg>");
         return svg.ToString();
+    }
+
+    // -------- Text collection helpers --------
+    private struct TextEntry { public string text; public Vector2 anchoredPosition; public int fontSize; }
+
+    private List<TextEntry> CollectTextEntries()
+    {
+        var list = new List<TextEntry>();
+
+        // Prefer text history if present
+        if (textManager != null && textManager.textHistory != null && textManager.textHistory.Count > 0)
+        {
+            foreach (var t in textManager.textHistory)
+            {
+                list.Add(new TextEntry { text = t.content, anchoredPosition = t.position, fontSize = t.fontSize });
+            }
+            return list;
+        }
+
+        // Fallback to scanning TMP texts under the provided area
+        if (whiteboardTextArea != null)
+        {
+            var tmps = whiteboardTextArea.GetComponentsInChildren<TextMeshProUGUI>(includeInactive: false);
+            foreach (var tmp in tmps)
+            {
+                list.Add(new TextEntry
+                {
+                    text = tmp.text,
+                    anchoredPosition = tmp.rectTransform.anchoredPosition,
+                    fontSize = Mathf.RoundToInt(tmp.fontSize)
+                });
+            }
+        }
+
+        return list;
     }
 
     private void CalculateDrawingBounds(List<LineRenderer> drawings, out Vector2 min, out Vector2 max)
