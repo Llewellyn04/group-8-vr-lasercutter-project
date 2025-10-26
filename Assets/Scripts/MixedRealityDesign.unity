@@ -4435,6 +4435,46 @@ MonoBehaviour:
   drawMode: 1
   minLineLength: 0.02
   polygonSides: 5
+  undoAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Undo
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 3f59c933-400a-49de-b728-da78ca57580d
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 954b9fd0-41a6-437e-93ec-3ee0490b79ef
+        m_Path: <XRController>{RightHand}/primaryButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Undo
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  redoAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Redo
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: afcded88-bf28-4a46-8d7d-ba1c031d2ed0
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 7b55afca-1bc9-4468-8eb1-e4f152cbf12e
+        m_Path: <XRController>/secondaryButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Redo
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
 --- !u!114 &419394399
 MonoBehaviour:
   m_ObjectHideFlags: 0

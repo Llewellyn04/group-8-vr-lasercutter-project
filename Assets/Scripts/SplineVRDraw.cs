@@ -62,7 +62,7 @@ public class SplineVRDraw : MonoBehaviour
     private Vector3 resizePivotLocal;
     private float resizeStartRadius = 0f;
     private Vector3[] resizingOriginalLocalPoints;
-    
+
     public enum DrawMode { None, Freehand, StraightLine, Rectangle, Circle, Polygon }
 
     [Header("Modes")]
@@ -81,12 +81,16 @@ public class SplineVRDraw : MonoBehaviour
     {
         if (dragAction.action != null) dragAction.action.Enable();
         if (resizeAction.action != null) resizeAction.action.Enable();
+        if (undoAction.action != null) undoAction.action.Enable();
+        if (redoAction.action != null) redoAction.action.Enable();
     }
 
     void OnDisable()
     {
         if (dragAction.action != null) dragAction.action.Disable();
         if (resizeAction.action != null) resizeAction.action.Disable();
+        if (undoAction.action != null) undoAction.action.Disable();
+        if (redoAction.action != null) redoAction.action.Disable();
     }
 
     void Update()
@@ -113,6 +117,9 @@ public class SplineVRDraw : MonoBehaviour
             if (!isResizing)
                 UpdateDragging();
         }
+
+        // Undo/Redo bindings (trigger on press edges)
+        UpdateUndoRedo();
     }
 
     void UpdateDrawing()
@@ -646,5 +653,50 @@ public class SplineVRDraw : MonoBehaviour
         t = Mathf.Clamp01(t);
         Vector2 closest = a2 + t * ab;
         return Vector2.Distance(p2, closest);
+    }
+
+    // ===== Undo/Redo bindings =====
+    [Header("Undo/Redo")]
+    [Tooltip("Input Action to Undo the last stroke")]
+    public UnityEngine.InputSystem.InputActionProperty undoAction;
+    [Tooltip("Input Action to Redo the last undone stroke")]
+    public UnityEngine.InputSystem.InputActionProperty redoAction;
+
+    private bool lastUndoPressed = false;
+    private bool lastRedoPressed = false;
+
+    void UpdateUndoRedo()
+    {
+        if (redoUndoManager == null)
+            return;
+
+        bool undoPressed = false;
+        bool redoPressed = false;
+
+        if (undoAction.action != null)
+        {
+            try { undoPressed = undoAction.action.ReadValue<float>() > 0.5f; } catch { undoPressed = false; }
+        }
+        if (redoAction.action != null)
+        {
+            try { redoPressed = redoAction.action.ReadValue<float>() > 0.5f; } catch { redoPressed = false; }
+        }
+
+        if (undoPressed && !lastUndoPressed)
+        {
+            // End any active manipulation first
+            if (isDragging) EndDrag();
+            if (isResizing) EndResize();
+            redoUndoManager.Undo();
+        }
+        if (redoPressed && !lastRedoPressed)
+        {
+            if (isDragging) EndDrag();
+            if (isResizing) EndResize();
+            redoUndoManager.Redo();
+        }
+
+        lastUndoPressed = undoPressed;
+        lastRedoPressed = redoPressed;
     }
 }
