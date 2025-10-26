@@ -4384,6 +4384,46 @@ MonoBehaviour:
   maxWidth: 135
   maxHeight: 135
   alwaysDraw: 1
+  stopDrawingAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Stop Drawing
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: fcf7cc26-afd9-4508-889b-71c77299283e
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 61385fcd-5dfe-489e-91fc-490a221372da
+        m_Path: <XRController>{RightHand}/gripButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Stop Drawing
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  startDrawingAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Start Drawing
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 8d38b071-92b0-4fea-bb18-fde5b2d9fd56
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 5222a0ab-72d2-4a4c-9910-19c5aebf93f2
+        m_Path: <XRController>{LeftHand}/gripButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Start Drawing
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
   dragAction:
     m_UseReference: 0
     m_Action:

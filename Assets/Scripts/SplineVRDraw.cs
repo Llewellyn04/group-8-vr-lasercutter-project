@@ -33,6 +33,16 @@ public class SplineVRDraw : MonoBehaviour
     private bool isDrawing = false;
     private bool lastTriggerState = false;
     
+    [Header("Stop Input")]
+    [Tooltip("Input Action to stop the current drawing (bind to a controller button, e.g. A/B)")]
+    public UnityEngine.InputSystem.InputActionProperty stopDrawingAction;
+    private bool lastStopPressed = false;
+
+    [Header("Start Input")]
+    [Tooltip("Single Input Action to start/resume drawing in the current mode (Freehand, StraightLine, Rectangle, Circle, Polygon)")]
+    public UnityEngine.InputSystem.InputActionProperty startDrawingAction;
+    private bool lastStartPressed = false;
+    
     [Header("Drag")]
     [Tooltip("Input Action used to grab/drag a closed shape (e.g. A button)")]
     public UnityEngine.InputSystem.InputActionProperty dragAction;
@@ -81,6 +91,8 @@ public class SplineVRDraw : MonoBehaviour
     {
         if (dragAction.action != null) dragAction.action.Enable();
         if (resizeAction.action != null) resizeAction.action.Enable();
+        if (stopDrawingAction.action != null) stopDrawingAction.action.Enable();
+        if (startDrawingAction.action != null) startDrawingAction.action.Enable();
         if (undoAction.action != null) undoAction.action.Enable();
         if (redoAction.action != null) redoAction.action.Enable();
     }
@@ -89,6 +101,8 @@ public class SplineVRDraw : MonoBehaviour
     {
         if (dragAction.action != null) dragAction.action.Disable();
         if (resizeAction.action != null) resizeAction.action.Disable();
+        if (stopDrawingAction.action != null) stopDrawingAction.action.Disable();
+        if (startDrawingAction.action != null) startDrawingAction.action.Disable();
         if (undoAction.action != null) undoAction.action.Disable();
         if (redoAction.action != null) redoAction.action.Disable();
     }
@@ -120,6 +134,32 @@ public class SplineVRDraw : MonoBehaviour
 
         // Undo/Redo bindings (trigger on press edges)
         UpdateUndoRedo();
+
+        // Optional: controller button bound Stop (edge-triggered)
+        bool stopPressed = false;
+        if (stopDrawingAction.action != null)
+        {
+            try { stopPressed = stopDrawingAction.action.ReadValue<float>() > 0.5f; }
+            catch { stopPressed = false; }
+        }
+        if (stopPressed && !lastStopPressed && isDrawing)
+        {
+            StopDrawing();
+        }
+        lastStopPressed = stopPressed;
+
+        // Start/Resume current mode (single button) on press edge
+        bool startPressed = false;
+        if (startDrawingAction.action != null)
+        {
+            try { startPressed = startDrawingAction.action.ReadValue<float>() > 0.5f; }
+            catch { startPressed = false; }
+        }
+        if (startPressed && !lastStartPressed && !isDrawing)
+        {
+            StartDrawing(); // uses current drawMode / useStraightLineMode
+        }
+        lastStartPressed = startPressed;
     }
 
     void UpdateDrawing()
