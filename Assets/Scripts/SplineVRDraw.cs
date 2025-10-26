@@ -33,6 +33,36 @@ public class SplineVRDraw : MonoBehaviour
     private bool isDrawing = false;
     private bool lastTriggerState = false;
     
+    [Header("Drag")]
+    [Tooltip("Input Action used to grab/drag a closed shape (e.g. A button)")]
+    public UnityEngine.InputSystem.InputActionProperty dragAction;
+    [Tooltip("Only allow dragging for closed shapes (looped LineRenderers)")]
+    public bool dragClosedShapesOnly = true;
+    [Tooltip("If false, also allow picking open lines by distance to segments (meters)")]
+    public bool allowOpenLineDrag = false;
+    [Min(0f)] public float openLinePickDistance = 0.01f;
+
+    private bool isDragging = false;
+    private LineRenderer draggedLine;
+    private Vector3 dragStartLocalPoint;
+    private Vector3[] draggedOriginalLocalPoints;
+
+    [Header("Resize")]
+    [Tooltip("Input Action used to resize a shape (e.g. B button)")]
+    public UnityEngine.InputSystem.InputActionProperty resizeAction;
+    [Tooltip("Only allow resizing for closed shapes (looped LineRenderers)")]
+    public bool resizeClosedShapesOnly = true;
+    [Tooltip("If false, also allow picking open lines by distance to segments (meters)")]
+    public bool allowOpenLineResize = false;
+    [Min(0.001f)] public float minResizeScale = 0.2f;
+    public float maxResizeScale = 5f;
+
+    private bool isResizing = false;
+    private LineRenderer resizingLine;
+    private Vector3 resizePivotLocal;
+    private float resizeStartRadius = 0f;
+    private Vector3[] resizingOriginalLocalPoints;
+    
     public enum DrawMode { None, Freehand, StraightLine, Rectangle, Circle, Polygon }
 
     [Header("Modes")]
@@ -46,6 +76,18 @@ public class SplineVRDraw : MonoBehaviour
     // Straight line state
     private bool hasStartPoint = false;
     private Vector3 startWorldPoint;
+
+    void OnEnable()
+    {
+        if (dragAction.action != null) dragAction.action.Enable();
+        if (resizeAction.action != null) resizeAction.action.Enable();
+    }
+
+    void OnDisable()
+    {
+        if (dragAction.action != null) dragAction.action.Disable();
+        if (resizeAction.action != null) resizeAction.action.Disable();
+    }
 
     void Update()
     {
@@ -63,6 +105,14 @@ public class SplineVRDraw : MonoBehaviour
 
         if (isDrawing || alwaysDraw)
             UpdateDrawing();
+
+        // Manipulations are available only when not drawing
+        if (!isDrawing)
+        {
+            UpdateResizing();
+            if (!isResizing)
+                UpdateDragging();
+        }
     }
 
     void UpdateDrawing()
@@ -364,5 +414,237 @@ public class SplineVRDraw : MonoBehaviour
             Vector3 worldPoint = whiteboardPlane.TransformPoint(localPoint);
             currentLine.SetPosition(i, worldPoint);
         }
+    }
+
+    // ===== Dragging logic =====
+    void UpdateDragging()
+    {
+        if (whiteboardPlane == null || drawingTip == null) return;
+
+        bool dragPressed = false;
+        if (dragAction.action != null)
+        {
+            try { dragPressed = dragAction.action.ReadValue<float>() > 0.5f; }
+            catch { dragPressed = false; }
+        }
+
+        if (!TryGetPointerOnBoard(out Vector3 hitWorld, out Vector3 hitLocal))
+        {
+            if (!dragPressed && isDragging)
+                EndDrag();
+            return;
+        }
+
+        if (dragPressed)
+        {
+            if (!isDragging)
+            {
+                if (TryPickShape(hitLocal, out LineRenderer picked, out Vector3[] originalLocal))
+                {
+                    isDragging = true;
+                    draggedLine = picked;
+                    draggedOriginalLocalPoints = originalLocal;
+                    dragStartLocalPoint = hitLocal;
+                }
+            }
+            else if (draggedLine != null && draggedOriginalLocalPoints != null)
+            {
+                Vector3 delta = hitLocal - dragStartLocalPoint;
+                int count = draggedOriginalLocalPoints.Length;
+                Vector3[] newWorld = new Vector3[count];
+                for (int i = 0; i < count; i++)
+                {
+                    Vector3 newLocal = draggedOriginalLocalPoints[i] + delta;
+                    newWorld[i] = whiteboardPlane.TransformPoint(newLocal);
+                }
+                if (draggedLine.positionCount != count) draggedLine.positionCount = count;
+                draggedLine.SetPositions(newWorld);
+            }
+        }
+        else
+        {
+            if (isDragging)
+                EndDrag();
+        }
+    }
+
+    void EndDrag()
+    {
+        isDragging = false;
+        draggedLine = null;
+        draggedOriginalLocalPoints = null;
+    }
+
+    bool TryGetPointerOnBoard(out Vector3 worldPoint, out Vector3 localPoint)
+    {
+        worldPoint = Vector3.zero;
+        localPoint = Vector3.zero;
+        Plane plane = new Plane(whiteboardPlane.forward, whiteboardPlane.position);
+        Ray ray = new Ray(drawingTip.position - drawingTip.forward * 0.05f, drawingTip.forward);
+        if (plane.Raycast(ray, out float enter))
+        {
+            worldPoint = ray.GetPoint(enter);
+            localPoint = whiteboardPlane.InverseTransformPoint(worldPoint);
+            localPoint.z = 0f;
+            return true;
+        }
+        return false;
+    }
+
+    bool TryPickShape(Vector3 pointerLocal, out LineRenderer picked, out Vector3[] originalLocal)
+        => TryPickShapeWithOptions(pointerLocal, dragClosedShapesOnly, allowOpenLineDrag, openLinePickDistance, out picked, out originalLocal);
+
+    bool TryPickShapeWithOptions(Vector3 pointerLocal, bool closedOnly, bool allowOpen, float openPickDistance,
+        out LineRenderer picked, out Vector3[] originalLocal)
+    {
+        picked = null;
+        originalLocal = null;
+
+        LineRenderer[] candidates = FindObjectsOfType<LineRenderer>();
+        foreach (var lr in candidates)
+        {
+            if (lr == null || !lr.gameObject.activeInHierarchy) continue;
+            int count = lr.positionCount;
+            if (count < 2) continue;
+
+            Vector3[] localPts = new Vector3[count];
+            for (int i = 0; i < count; i++)
+                localPts[i] = whiteboardPlane.InverseTransformPoint(lr.GetPosition(i));
+
+            if (lr.loop && count >= 3)
+            {
+                if (PointInPolygon(pointerLocal, localPts))
+                {
+                    picked = lr;
+                    originalLocal = localPts;
+                    return true;
+                }
+            }
+            else if (!closedOnly && allowOpen)
+            {
+                if (DistanceToPolyline(pointerLocal, localPts) <= openPickDistance)
+                {
+                    picked = lr;
+                    originalLocal = localPts;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // ===== Resizing logic =====
+    void UpdateResizing()
+    {
+        if (whiteboardPlane == null || drawingTip == null) return;
+
+        bool resizePressed = false;
+        if (resizeAction.action != null)
+        {
+            try { resizePressed = resizeAction.action.ReadValue<float>() > 0.5f; }
+            catch { resizePressed = false; }
+        }
+
+        if (!TryGetPointerOnBoard(out Vector3 hitWorld, out Vector3 hitLocal))
+        {
+            if (!resizePressed && isResizing) EndResize();
+            return;
+        }
+
+        if (resizePressed)
+        {
+            if (!isResizing)
+            {
+                if (TryPickShapeWithOptions(hitLocal, resizeClosedShapesOnly, allowOpenLineResize, openLinePickDistance, out LineRenderer picked, out Vector3[] originalLocal))
+                {
+                    isResizing = true;
+                    resizingLine = picked;
+                    resizingOriginalLocalPoints = originalLocal;
+                    resizePivotLocal = ComputeCentroid(originalLocal);
+                    resizeStartRadius = Mathf.Max(Vector2.Distance(new Vector2(hitLocal.x, hitLocal.y), new Vector2(resizePivotLocal.x, resizePivotLocal.y)), 0.001f);
+                }
+            }
+            else if (resizingLine != null && resizingOriginalLocalPoints != null)
+            {
+                float currentRadius = Mathf.Max(Vector2.Distance(new Vector2(hitLocal.x, hitLocal.y), new Vector2(resizePivotLocal.x, resizePivotLocal.y)), 0.0001f);
+                float scale = currentRadius / resizeStartRadius;
+                scale = Mathf.Clamp(scale, minResizeScale, maxResizeScale);
+
+                int count = resizingOriginalLocalPoints.Length;
+                Vector3[] newWorld = new Vector3[count];
+                for (int i = 0; i < count; i++)
+                {
+                    Vector3 offset = resizingOriginalLocalPoints[i] - resizePivotLocal;
+                    Vector3 newLocal = resizePivotLocal + offset * scale;
+                    newWorld[i] = whiteboardPlane.TransformPoint(newLocal);
+                }
+                if (resizingLine.positionCount != count) resizingLine.positionCount = count;
+                resizingLine.SetPositions(newWorld);
+            }
+        }
+        else
+        {
+            if (isResizing) EndResize();
+        }
+    }
+
+    void EndResize()
+    {
+        isResizing = false;
+        resizingLine = null;
+        resizingOriginalLocalPoints = null;
+        resizeStartRadius = 0f;
+    }
+
+    static Vector3 ComputeCentroid(Vector3[] points)
+    {
+        if (points == null || points.Length == 0) return Vector3.zero;
+        Vector2 sum = Vector2.zero;
+        for (int i = 0; i < points.Length; i++)
+        {
+            sum.x += points[i].x;
+            sum.y += points[i].y;
+        }
+        Vector3 c = new Vector3(sum.x / points.Length, sum.y / points.Length, 0f);
+        return c;
+    }
+
+    static bool PointInPolygon(Vector3 pLocal, Vector3[] polyLocal)
+    {
+        bool inside = false;
+        int j = polyLocal.Length - 1;
+        for (int i = 0; i < polyLocal.Length; i++)
+        {
+            Vector3 pi = polyLocal[i];
+            Vector3 pj = polyLocal[j];
+            bool intersect = ((pi.y > pLocal.y) != (pj.y > pLocal.y)) &&
+                             (pLocal.x < (pj.x - pi.x) * (pLocal.y - pi.y) / (pj.y - pi.y + Mathf.Epsilon) + pi.x);
+            if (intersect) inside = !inside;
+            j = i;
+        }
+        return inside;
+    }
+
+    static float DistanceToPolyline(Vector3 pLocal, Vector3[] ptsLocal)
+    {
+        float minDist = float.MaxValue;
+        for (int i = 0; i < ptsLocal.Length - 1; i++)
+        {
+            float d = DistancePointToSegment2D(pLocal, ptsLocal[i], ptsLocal[i + 1]);
+            if (d < minDist) minDist = d;
+        }
+        return minDist;
+    }
+
+    static float DistancePointToSegment2D(Vector3 p, Vector3 a, Vector3 b)
+    {
+        Vector2 p2 = new Vector2(p.x, p.y);
+        Vector2 a2 = new Vector2(a.x, a.y);
+        Vector2 b2 = new Vector2(b.x, b.y);
+        Vector2 ab = b2 - a2;
+        float t = Vector2.Dot(p2 - a2, ab) / (ab.sqrMagnitude + Mathf.Epsilon);
+        t = Mathf.Clamp01(t);
+        Vector2 closest = a2 + t * ab;
+        return Vector2.Distance(p2, closest);
     }
 }

@@ -4384,6 +4384,53 @@ MonoBehaviour:
   maxWidth: 135
   maxHeight: 135
   alwaysDraw: 1
+  dragAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Drag
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: d473fd72-77ff-4fc2-ac8c-267f4cad2bd6
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 89944e76-7a23-4e14-8121-93559b17979a
+        m_Path: <XRController>{LeftHand}/primaryButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Drag
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  dragClosedShapesOnly: 1
+  allowOpenLineDrag: 0
+  openLinePickDistance: 0.01
+  resizeAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Resize
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 57ad1cc5-9cc8-4593-b4ad-220563966dd3
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 61ac689d-0a68-4115-8921-5543dbbabbd1
+        m_Path: <XRController>{LeftHand}/secondaryButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Resize
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  resizeClosedShapesOnly: 1
+  allowOpenLineResize: 0
+  minResizeScale: 0.2
+  maxResizeScale: 5
   useStraightLineMode: 1
   drawMode: 1
   minLineLength: 0.02
