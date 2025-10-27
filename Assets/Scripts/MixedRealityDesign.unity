@@ -4455,6 +4455,10 @@ MonoBehaviour:
   maxWidth: 135
   maxHeight: 135
   alwaysDraw: 1
+  textInputField: {fileID: 1800827813}
+  textPrefab3D: {fileID: 0}
+  textWorldScale: 0.01
+  textColor: {r: 0, g: 0, b: 0, a: 1}
   stopDrawingAction:
     m_UseReference: 0
     m_Action:
@@ -14703,6 +14707,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
+      - m_Target: {fileID: 1768968871}
+        m_TargetAssemblyTypeName: SVGImporter, Assembly-CSharp
+        m_MethodName: ImportSVGFromDialog
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
 --- !u!114 &1373964918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15364,10 +15380,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 326499197}
-        m_TargetAssemblyTypeName: WhiteboardTextManager, Assembly-CSharp
-        m_MethodName: set_enabled
-        m_Mode: 6
+      - m_Target: {fileID: 419394398}
+        m_TargetAssemblyTypeName: SplineVRDraw, Assembly-CSharp
+        m_MethodName: ShowTextInput
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -17849,6 +17865,60 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1742796645}
   m_CullTransparentMesh: 1
+--- !u!1 &1768968870
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1768968872}
+  - component: {fileID: 1768968871}
+  m_Layer: 0
+  m_Name: ImportManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1768968871
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1768968870}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6642d64aa96ccb94b83c2749c2fa8b17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SVGImporter
+  whiteboardPlane: {fileID: 896071513}
+  lineRendererPrefab: {fileID: 1434939225}
+  redoUndoManager: {fileID: 373176420}
+  whiteboardWidth: 135
+  whiteboardHeight: 135
+  whiteboardCenter: {x: 0, y: 0}
+  importedZOffset: 0
+  importedColor: {r: 1, g: 0, b: 0, a: 1}
+  importedLineWidth: 0.02
+  enableLogs: 1
+--- !u!4 &1768968872
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1768968870}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.01617, y: 0.25, z: 0.9107}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1773072282
 GameObject:
   m_ObjectHideFlags: 0
@@ -22620,6 +22690,7 @@ SceneRoots:
   - {fileID: 357660717}
   - {fileID: 1353939259}
   - {fileID: 1900755137}
+  - {fileID: 1768968872}
   - {fileID: 419394397}
   - {fileID: 373176419}
   - {fileID: 1704340422135113747}

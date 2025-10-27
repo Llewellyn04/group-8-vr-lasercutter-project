@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
+using TMPro;
 
 [System.Serializable]
 public class VRDrawSettings
@@ -32,6 +33,14 @@ public class SplineVRDraw : MonoBehaviour
     private LineRenderer currentLine;
     private bool isDrawing = false;
     private bool lastTriggerState = false;
+
+    [Header("Text")]
+    [Tooltip("TMP_InputField used to enter text for placement on the whiteboard")]
+    public TMP_InputField textInputField;
+    [Tooltip("Prefab for world-space TextMeshPro. If null, a basic TextMeshPro component will be created at runtime.")]
+    public TextMeshPro textPrefab3D;
+    [Tooltip("Uniform world scale applied to created text objects")] public float textWorldScale = 0.01f;
+    [Tooltip("Default color for created text")] public Color textColor = Color.black;
     
     [Header("Stop Input")]
     [Tooltip("Input Action to stop the current drawing (bind to a controller button, e.g. A/B)")]
@@ -95,6 +104,12 @@ public class SplineVRDraw : MonoBehaviour
         if (startDrawingAction.action != null) startDrawingAction.action.Enable();
         if (undoAction.action != null) undoAction.action.Enable();
         if (redoAction.action != null) redoAction.action.Enable();
+
+        // Hook text input (if assigned)
+        if (textInputField != null)
+        {
+            textInputField.onEndEdit.AddListener(OnTextSubmitted);
+        }
     }
 
     void OnDisable()
@@ -105,6 +120,11 @@ public class SplineVRDraw : MonoBehaviour
         if (startDrawingAction.action != null) startDrawingAction.action.Disable();
         if (undoAction.action != null) undoAction.action.Disable();
         if (redoAction.action != null) redoAction.action.Disable();
+
+        if (textInputField != null)
+        {
+            textInputField.onEndEdit.RemoveListener(OnTextSubmitted);
+        }
     }
 
     void Update()
@@ -407,6 +427,96 @@ public class SplineVRDraw : MonoBehaviour
     {
         if (isDrawing && drawMode == DrawMode.Polygon) StopDrawing();
         else { if (isDrawing) StopDrawing(); useStraightLineMode = false; drawMode = DrawMode.Polygon; StartDrawing(); }
+    }
+
+    // ===== Text creation (new) =====
+    // Called when the TMP_InputField completes editing. Places text at the current controller hit point on the whiteboard.
+    private void OnTextSubmitted(string newText)
+    {
+        if (string.IsNullOrWhiteSpace(newText))
+        {
+            // Hide/clear regardless to keep UI clean
+            if (textInputField != null)
+            {
+                textInputField.text = string.Empty;
+                textInputField.gameObject.SetActive(false);
+            }
+            return;
+        }
+
+        PlaceTextOnWhiteboard(newText);
+
+        if (textInputField != null)
+        {
+            textInputField.text = string.Empty;
+            textInputField.gameObject.SetActive(false);
+        }
+    }
+
+    // Public helper to show the input field (can be bound to a UI button)
+    public void ShowTextInput()
+    {
+        if (textInputField == null) return;
+        textInputField.gameObject.SetActive(true);
+        textInputField.ActivateInputField();
+    }
+
+    // Core text placement logic: spawns a world-space TextMeshPro at the controller hit point (or whiteboard center if not available).
+    public void PlaceTextOnWhiteboard(string content)
+    {
+        if (whiteboardPlane == null)
+        {
+            Debug.LogWarning("Whiteboard plane not assigned; cannot place text.");
+            return;
+        }
+
+        // Determine target local position on the whiteboard
+        Vector3 targetWorld;
+        Vector3 targetLocal;
+        if (!TryGetPointerOnBoard(out targetWorld, out targetLocal))
+        {
+            targetLocal = Vector3.zero; // fallback to center
+            targetWorld = whiteboardPlane.TransformPoint(targetLocal);
+        }
+
+        float halfWidth = maxWidth * 0.5f;
+        float halfHeight = maxHeight * 0.5f;
+        targetLocal.x = Mathf.Clamp(targetLocal.x, -halfWidth, halfWidth);
+        targetLocal.y = Mathf.Clamp(targetLocal.y, -halfHeight, halfHeight);
+        targetLocal.z = 0f;
+        targetWorld = whiteboardPlane.TransformPoint(targetLocal);
+
+        // Create text object
+        TextMeshPro tmp;
+        GameObject go;
+        if (textPrefab3D != null)
+        {
+            tmp = Instantiate(textPrefab3D, whiteboardPlane);
+            go = tmp.gameObject;
+        }
+        else
+        {
+            go = new GameObject("VR_Text");
+            go.transform.SetParent(whiteboardPlane, worldPositionStays: false);
+            tmp = go.AddComponent<TextMeshPro>();
+            // Minimal default styling when no prefab provided
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.fontSize = 2f; // world-space TMP will be scaled below
+        }
+
+        go.name = "VR_Text";
+        go.transform.position = targetWorld;
+        go.transform.rotation = whiteboardPlane.rotation; // face the same way as the board
+        go.transform.localScale = Vector3.one * Mathf.Max(0.0001f, textWorldScale);
+
+        tmp.text = content;
+        tmp.color = textColor;
+
+        // Register with Undo/Redo so it behaves like other shapes
+        if (redoUndoManager != null)
+        {
+            redoUndoManager.RegisterLine(go);
+        }
     }
 
     // ===== Helpers to build previews for Rectangle/Circle/Polygon =====

@@ -46,7 +46,8 @@ public class ExportSVG : MonoBehaviour
         List<LineRenderer> drawings = new List<LineRenderer>();
         foreach (LineRenderer line in allLines)
         {
-            if (line.name.Contains("VR_") || line.name.Contains("Drawing"))
+            bool isWhiteboardChild = whiteboardPlane != null && (line.transform == whiteboardPlane || line.transform.IsChildOf(whiteboardPlane));
+            if (isWhiteboardChild || line.name.Contains("VR_") || line.name.Contains("Drawing"))
             {
                 drawings.Add(line);
                 Debug.Log($"Added: {line.name} ({line.positionCount} points)");
