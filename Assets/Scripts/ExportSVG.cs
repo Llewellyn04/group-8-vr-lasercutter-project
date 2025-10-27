@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -62,11 +63,18 @@ public class ExportSVG : MonoBehaviour
 
         Debug.Log($"Exporting {drawings.Count} drawings");
 
-        // Collect text entries
-        var texts = CollectTextEntries();
+        // Collect text entries (UGUI) and world-space TextMeshPro (from SplineVRDraw)
+        var uiTexts = CollectUITextEntries();
+        var worldTexts = CollectWorldTMPEntries();
 
-        string svgContent = GenerateSVGContent(drawings, texts);
-        string filePath = Path.Combine(Application.persistentDataPath, fileName);
+        string svgContent = GenerateSVGContent(drawings, uiTexts, worldTexts);
+
+        string filePath = GetSavePath(fileName, "svg");
+        if (string.IsNullOrEmpty(filePath))
+        {
+            Debug.Log("Export canceled by user.");
+            return;
+        }
 
         try
         {
@@ -83,7 +91,75 @@ public class ExportSVG : MonoBehaviour
         }
     }
 
-    private string GenerateSVGContent(List<LineRenderer> drawings, List<TextEntry> texts)
+    // ===== Save dialog helpers =====
+    private string GetSavePath(string defaultName, string extension)
+    {
+        extension = extension?.Trim('.') ?? "svg";
+        string initialName = EnsureExtension(defaultName, extension);
+
+#if UNITY_EDITOR
+        string path = UnityEditor.EditorUtility.SaveFilePanel(
+            "Save SVG",
+            Application.dataPath,
+            initialName,
+            extension
+        );
+        return string.IsNullOrEmpty(path) ? null : EnsureExtension(path, extension);
+#elif UNITY_STANDALONE_WIN
+        try
+        {
+            return SaveFileDialogWindows(initialName, $"{extension.ToUpper()} files (*.{extension})|*.{extension}|All files (*.*)|*.*", extension);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"Save dialog failed, using persistentDataPath: {ex.Message}");
+            return Path.Combine(Application.persistentDataPath, initialName);
+        }
+#else
+        // Fallback to persistentDataPath on other platforms
+        return Path.Combine(Application.persistentDataPath, initialName);
+#endif
+    }
+
+    private string EnsureExtension(string path, string extension)
+    {
+        extension = extension?.Trim('.') ?? string.Empty;
+        if (string.IsNullOrEmpty(extension)) return path;
+        return Path.HasExtension(path) ? path : path + "." + extension;
+    }
+
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+    private string SaveFileDialogWindows(string defaultName, string filter, string extension)
+    {
+        string selected = null;
+        var t = new System.Threading.Thread(() =>
+        {
+            try
+            {
+                using (var sfd = new System.Windows.Forms.SaveFileDialog())
+                {
+                    sfd.Filter = filter;
+                    sfd.FileName = defaultName;
+                    sfd.DefaultExt = extension;
+                    sfd.AddExtension = true;
+                    var result = sfd.ShowDialog();
+                    if (result == System.Windows.Forms.DialogResult.OK)
+                        selected = sfd.FileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"SaveFileDialog error: {ex.Message}");
+            }
+        });
+        t.SetApartmentState(System.Threading.ApartmentState.STA);
+        t.Start();
+        t.Join();
+        return selected;
+    }
+#endif
+
+    private string GenerateSVGContent(List<LineRenderer> drawings, List<TextEntry> uiTexts, List<WorldTextEntry> worldTexts)
     {
         var culture = System.Globalization.CultureInfo.InvariantCulture;
         StringBuilder svg = new StringBuilder();
@@ -156,10 +232,10 @@ public class ExportSVG : MonoBehaviour
             svg.AppendLine($@"        stroke-linejoin=""round"" />");
         }
 
-        // Add text entries if provided
-        if (texts != null && texts.Count > 0)
+        // Add UI text entries if provided
+        if (uiTexts != null && uiTexts.Count > 0)
         {
-            foreach (var t in texts)
+            foreach (var t in uiTexts)
             {
                 // Map UI anchoredPosition to SVG canvas
                 float svgX;
@@ -185,14 +261,33 @@ public class ExportSVG : MonoBehaviour
             }
         }
 
+        // Add world-space TMP texts (projected onto the plane), mapped via drawing bounds
+        if (worldTexts != null && worldTexts.Count > 0)
+        {
+            foreach (var t in worldTexts)
+            {
+                float normalizedX = (t.localPos.x - actualMin.x) / Mathf.Max(0.0001f, boundsWidth);
+                float normalizedY = (t.localPos.y - actualMin.y) / Mathf.Max(0.0001f, boundsHeight);
+
+                float svgX = normalizedX * canvasWidth;
+                float svgY = (1f - normalizedY) * canvasHeight; // Flip Y to SVG
+
+                string safe = System.Security.SecurityElement.Escape(t.text ?? string.Empty);
+                // Approximate font size using TMP size * local scale
+                int fontSize = Mathf.Max(1, Mathf.RoundToInt(t.fontSize * Mathf.Max(0.0001f, t.scale) * 10f));
+                svg.AppendLine($@"  <text x=""{svgX.ToString("F2", culture)}"" y=""{svgY.ToString("F2", culture)}"" font-size=""{fontSize}"" font-family=""Arial"" fill=""#000000"">{safe}</text>");
+            }
+        }
+
         svg.AppendLine("</svg>");
         return svg.ToString();
     }
 
     // -------- Text collection helpers --------
     private struct TextEntry { public string text; public Vector2 anchoredPosition; public int fontSize; }
+    private struct WorldTextEntry { public string text; public Vector2 localPos; public int fontSize; public float scale; }
 
-    private List<TextEntry> CollectTextEntries()
+    private List<TextEntry> CollectUITextEntries()
     {
         var list = new List<TextEntry>();
 
@@ -221,6 +316,26 @@ public class ExportSVG : MonoBehaviour
             }
         }
 
+        return list;
+    }
+
+    private List<WorldTextEntry> CollectWorldTMPEntries()
+    {
+        var list = new List<WorldTextEntry>();
+        if (whiteboardPlane == null) return list;
+
+        var tmps = whiteboardPlane.GetComponentsInChildren<TextMeshPro>(includeInactive: false);
+        foreach (var tmp in tmps)
+        {
+            Vector3 local = whiteboardPlane.InverseTransformPoint(tmp.transform.position);
+            list.Add(new WorldTextEntry
+            {
+                text = tmp.text,
+                localPos = new Vector2(local.x, local.y),
+                fontSize = Mathf.RoundToInt(tmp.fontSize),
+                scale = tmp.transform.localScale.x
+            });
+        }
         return list;
     }
 

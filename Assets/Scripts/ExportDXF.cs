@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -7,6 +8,8 @@ public class ExportDXF : MonoBehaviour
 {
     [Header("References")]
     public Transform whiteboardPlane;
+    [Tooltip("Optional: UI Rect that holds TMP UGUI texts for the whiteboard")] public RectTransform whiteboardTextArea;
+    [Tooltip("Optional: Text manager that stores UI text history")] public WhiteboardTextManager textManager;
 
     [Header("DXF Settings")]
     public string fileName = "whiteboard_drawing.dxf";
@@ -20,6 +23,8 @@ public class ExportDXF : MonoBehaviour
 
     [Header("DXF Scale")]
     public float dxfScale = 1000f; // Scale factor for DXF units (1000 = millimeters)
+    [Tooltip("Scale factor to convert font size/scale to DXF text height units")] public float dxfTextHeightFactor = 1.0f;
+    [Tooltip("Include detected texts (UGUI + 3D TMP) in DXF export as TEXT entities")] public bool includeText = true;
 
     [Header("Debug")]
     public bool showDebugLogs = true;
@@ -58,10 +63,18 @@ public class ExportDXF : MonoBehaviour
             return;
         }
 
-        Debug.Log($"Exporting {drawings.Count} drawings to DXF");
+        // Collect text entries (UI and world-space TMP)
+        List<TextEntry> texts = includeText ? CollectAllTextEntries() : new List<TextEntry>();
 
-        string dxfContent = GenerateDXFContent(drawings);
-        string filePath = Path.Combine(Application.persistentDataPath, fileName);
+        Debug.Log($"Exporting {drawings.Count} drawings to DXF (texts: {texts.Count})");
+
+        string dxfContent = GenerateDXFContent(drawings, texts);
+        string filePath = GetSavePath(fileName, "dxf");
+        if (string.IsNullOrEmpty(filePath))
+        {
+            Debug.Log("DXF export canceled by user.");
+            return;
+        }
 
         try
         {
@@ -78,7 +91,74 @@ public class ExportDXF : MonoBehaviour
         }
     }
 
-    private string GenerateDXFContent(List<LineRenderer> drawings)
+    // ===== Save dialog helpers =====
+    private string GetSavePath(string defaultName, string extension)
+    {
+        extension = extension?.Trim('.') ?? "dxf";
+        string initialName = EnsureExtension(defaultName, extension);
+
+#if UNITY_EDITOR
+        string path = UnityEditor.EditorUtility.SaveFilePanel(
+            "Save DXF",
+            Application.dataPath,
+            initialName,
+            extension
+        );
+        return string.IsNullOrEmpty(path) ? null : EnsureExtension(path, extension);
+#elif UNITY_STANDALONE_WIN
+        try
+        {
+            return SaveFileDialogWindows(initialName, $"{extension.ToUpper()} files (*.{extension})|*.{extension}|All files (*.*)|*.*", extension);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"Save dialog failed, using persistentDataPath: {ex.Message}");
+            return Path.Combine(Application.persistentDataPath, initialName);
+        }
+#else
+        return Path.Combine(Application.persistentDataPath, initialName);
+#endif
+    }
+
+    private string EnsureExtension(string path, string extension)
+    {
+        extension = extension?.Trim('.') ?? string.Empty;
+        if (string.IsNullOrEmpty(extension)) return path;
+        return Path.HasExtension(path) ? path : path + "." + extension;
+    }
+
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+    private string SaveFileDialogWindows(string defaultName, string filter, string extension)
+    {
+        string selected = null;
+        var t = new System.Threading.Thread(() =>
+        {
+            try
+            {
+                using (var sfd = new System.Windows.Forms.SaveFileDialog())
+                {
+                    sfd.Filter = filter;
+                    sfd.FileName = defaultName;
+                    sfd.DefaultExt = extension;
+                    sfd.AddExtension = true;
+                    var result = sfd.ShowDialog();
+                    if (result == System.Windows.Forms.DialogResult.OK)
+                        selected = sfd.FileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"SaveFileDialog error: {ex.Message}");
+            }
+        });
+        t.SetApartmentState(System.Threading.ApartmentState.STA);
+        t.Start();
+        t.Join();
+        return selected;
+    }
+#endif
+
+    private string GenerateDXFContent(List<LineRenderer> drawings, List<TextEntry> texts)
     {
         var culture = System.Globalization.CultureInfo.InvariantCulture;
         StringBuilder dxf = new StringBuilder();
@@ -93,8 +173,8 @@ public class ExportDXF : MonoBehaviour
             Debug.Log($"Auto-calculated bounds: Min({actualMin.x:F3}, {actualMin.y:F3}), Max({actualMax.x:F3}, {actualMax.y:F3})");
         }
 
-        float boundsWidth = actualMax.x - actualMin.x;
-        float boundsHeight = actualMax.y - actualMin.y;
+        float boundsWidth = Mathf.Max(0.0001f, actualMax.x - actualMin.x);
+        float boundsHeight = Mathf.Max(0.0001f, actualMax.y - actualMin.y);
 
         // DXF Header Section
         dxf.AppendLine("0");
@@ -207,6 +287,37 @@ public class ExportDXF : MonoBehaviour
             }
         }
 
+        // Add TEXT entities (if any)
+        if (texts != null && texts.Count > 0)
+        {
+            foreach (var t in texts)
+            {
+                // Map local plane XY -> normalized -> DXF units
+                float normalizedX = (t.localPos.x - actualMin.x) / boundsWidth;
+                float normalizedY = (t.localPos.y - actualMin.y) / boundsHeight;
+
+                float dxfX = normalizedX * dxfScale;
+                float dxfY = normalizedY * dxfScale;
+
+                float height = Mathf.Max(1f, t.fontSize) * Mathf.Max(0.0001f, t.scale) * Mathf.Max(0.0001f, dxfTextHeightFactor);
+
+                dxf.AppendLine("0");
+                dxf.AppendLine("TEXT");
+                dxf.AppendLine("8");
+                dxf.AppendLine("0"); // Layer name
+                dxf.AppendLine("10");
+                dxf.AppendLine(dxfX.ToString("F6", culture));
+                dxf.AppendLine("20");
+                dxf.AppendLine(dxfY.ToString("F6", culture));
+                dxf.AppendLine("30");
+                dxf.AppendLine("0.0");
+                dxf.AppendLine("40"); // Text height
+                dxf.AppendLine(height.ToString("F6", culture));
+                dxf.AppendLine("1");   // Text string
+                dxf.AppendLine(t.text ?? string.Empty);
+            }
+        }
+
         // End Entities Section
         dxf.AppendLine("0");
         dxf.AppendLine("ENDSEC");
@@ -216,6 +327,58 @@ public class ExportDXF : MonoBehaviour
         dxf.AppendLine("EOF");
 
         return dxf.ToString();
+    }
+
+    // -------- Text collection --------
+    private struct TextEntry { public string text; public Vector2 localPos; public int fontSize; public float scale; }
+
+    private List<TextEntry> CollectAllTextEntries()
+    {
+        var list = new List<TextEntry>();
+
+        // Prefer text history from manager (UI texts placed on whiteboard)
+        if (textManager != null && textManager.textHistory != null && textManager.textHistory.Count > 0)
+        {
+            foreach (var t in textManager.textHistory)
+            {
+                list.Add(new TextEntry { text = t.content, localPos = t.position, fontSize = t.fontSize, scale = 1f });
+            }
+        }
+
+        // Fallback: scan any TMP UGUI under the provided area
+        if (whiteboardTextArea != null)
+        {
+            var tmps = whiteboardTextArea.GetComponentsInChildren<TMPro.TextMeshProUGUI>(includeInactive: false);
+            foreach (var tmp in tmps)
+            {
+                list.Add(new TextEntry
+                {
+                    text = tmp.text,
+                    localPos = tmp.rectTransform.anchoredPosition,
+                    fontSize = Mathf.RoundToInt(tmp.fontSize),
+                    scale = tmp.rectTransform.localScale.x
+                });
+            }
+        }
+
+        // Also scan world-space TextMeshPro under the whiteboard plane (used by SplineVRDraw)
+        if (whiteboardPlane != null)
+        {
+            var worldTmps = whiteboardPlane.GetComponentsInChildren<TMPro.TextMeshPro>(includeInactive: false);
+            foreach (var tmp in worldTmps)
+            {
+                Vector3 local = whiteboardPlane.InverseTransformPoint(tmp.transform.position);
+                list.Add(new TextEntry
+                {
+                    text = tmp.text,
+                    localPos = new Vector2(local.x, local.y),
+                    fontSize = Mathf.RoundToInt(tmp.fontSize),
+                    scale = tmp.transform.localScale.x
+                });
+            }
+        }
+
+        return list;
     }
 
     private void CalculateDrawingBounds(List<LineRenderer> drawings, out Vector2 min, out Vector2 max)

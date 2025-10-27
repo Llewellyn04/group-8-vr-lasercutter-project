@@ -1969,11 +1969,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExportDXF
   whiteboardPlane: {fileID: 896071513}
+  whiteboardTextArea: {fileID: 0}
+  textManager: {fileID: 0}
   fileName: whiteboard_drawing.dxf
   autoCalculateBounds: 1
   boundsMin: {x: -0.5, y: -0.5}
   boundsMax: {x: 0.5, y: 0.5}
   dxfScale: 1000
+  dxfTextHeightFactor: 1
+  includeText: 1
   showDebugLogs: 1
 --- !u!1 &167694354
 GameObject:
@@ -9562,7 +9566,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExportSVG
   whiteboardPlane: {fileID: 599937833}
-  whiteboardTextArea: {fileID: 0}
+  whiteboardTextArea: {fileID: 896071513}
   textManager: {fileID: 0}
   canvasWidth: 1000
   canvasHeight: 1000
