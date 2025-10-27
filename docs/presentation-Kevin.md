@@ -25,7 +25,7 @@ System development overview
   - Straight line: `Assets/Scripts/StraightLineVRDraw.cs`
   - Shapes: `Assets/Scripts/RectangleVRDraw.cs`, `Assets/Scripts/CircleVRDraw.cs`, `Assets/Scripts/PolygonVRDraw.cs`
   - State: `Assets/Scripts/RedoUndoManager.cs`
-  - Text: `Assets/Scripts/TextManager.cs`, `Assets/Scripts/DraggableText.cs`
+  - Text: `Assets/Scripts/TextManager.cs` (WhiteboardTextManager), `Assets/Scripts/DraggableText.cs`
   - Import/Export: `Assets/Scripts/FileListManager.cs`, `Assets/Scripts/ExportSVG.cs`, `Assets/Scripts/ExportDXF.cs`
 
 Code discussion — SplineVRDraw
@@ -66,6 +66,23 @@ Live demo cues (60–90 seconds)
 Q&A prompts
 - Performance on large drawings? — LineRenderer cost scales with vertex count; we clamp density and reuse arrays where possible.
 - Precision and scaling? — All ops occur in board local space, clamped by `maxWidth`/`maxHeight`.
+
+Import/Export updates (what’s new)
+- SVG export (ExportSVG)
+  - Auto-calculates bounds from current board strokes or uses manual bounds; maps world → plane local → normalized → canvas coordinates.
+  - Includes text from two sources: UGUI labels (via `whiteboardTextArea`/`textManager.textHistory`) and world‑space TMP under the whiteboard plane.
+  - Save path uses Editor `SaveFilePanel`; Windows standalone shows a native SaveFileDialog; other platforms fall back to `persistentDataPath`.
+- DXF export (ExportDXF)
+  - Emits `LWPOLYLINE` vertices in DXF units scaled by `dxfScale`.
+  - Optional text export via `includeText`, writing TEXT entities; height scaled by `dxfTextHeightFactor`.
+- Import pipeline (FileListManager)
+  - Robust DXF/SVG import with complete and simplified parsers, plus path separation to avoid unintended connections.
+  - Supports LINE, LWPOLYLINE, ARC (segmented), and CIRCLE; maps to board space and renders with a safe Z‑offset and renderQueue for visibility.
+  - Debug logging and UI plumbing improved; file list built from `Assets/<importFolderPath>`.
+
+Text updates (integration)
+- WhiteboardTextManager now shares controller bindings with Spline tools: drag/resize/undo/redo actions and plane projection for pointer.
+- DraggableText supports controller‑based drag and resize on the plane, with min/max scale clamps; labels register with `RedoUndoManager` like strokes.
 
 Code snippets (architecture and SplineVRDraw)
 - Update loop and trigger control (from `SplineVRDraw`)

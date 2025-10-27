@@ -36,7 +36,7 @@ Demo cue
 
 Q&A seeds
 - Integration with new controllers? — Built on OpenXR; bindings configurable.
-- File fidelity? — DXF/SVG export covers lines, polygons, circles; text included in SVG.
+- File fidelity? — DXF/SVG export covers lines, polygons, circles; text included in both (SVG text elements, DXF TEXT entities when enabled).
 
 Code snippets (for context)
 - Drawing modes and settings (from `Assets/Scripts/SplineVRDraw.cs`)

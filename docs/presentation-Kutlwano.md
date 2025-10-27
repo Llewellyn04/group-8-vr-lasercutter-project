@@ -25,7 +25,7 @@ Lessons learned (talking points)
 - Input consistency matters: all controllers and actions use the Input System for clean remapping.
 - Local‑space math avoids scale/drift on transformed boards; clamp early and often.
 - Performance: manage vertex counts and update batches to keep LineRenderer efficient.
-- Interop: SVG uses canvas pixels; DXF uses unit scaling — bounds and `dxfScale` keep outputs predictable.
+- Interop: SVG uses canvas pixels; DXF uses unit scaling — bounds and `dxfScale` keep outputs predictable. Exports now optionally include text (UI and world‑space TMP); Windows builds show a native save dialog.
 - UX: visual previews reduce mistakes; minimum thresholds prevent accidental tiny shapes.
 
 Code snippets (Polygon mode)

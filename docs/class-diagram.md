@@ -231,11 +231,15 @@ class ExportSVG {
 
 class ExportDXF {
   +Transform whiteboardPlane
+  +RectTransform whiteboardTextArea
+  +WhiteboardTextManager textManager
   +string fileName
   +bool autoCalculateBounds
   +Vector2 boundsMin
   +Vector2 boundsMax
   +float dxfScale
+  +float dxfTextHeightFactor
+  +bool includeText
   +bool showDebugLogs
   +void ExportToDXF()
 }
@@ -260,6 +264,13 @@ class WhiteboardTextManager {
   +TMP_InputField textInputField
   +RectTransform whiteboardArea
   +TextMeshProUGUI textPrefab
+  +Transform whiteboardPlane
+  +Transform drawingTip
+  +RedoUndoManager redoUndoManager
+  +InputActionProperty dragAction
+  +InputActionProperty resizeAction
+  +InputActionProperty undoAction
+  +InputActionProperty redoAction
   +List<VectorTextEntry> textHistory
   -void Start()
   +void VerifySetup()
@@ -282,6 +293,12 @@ class DraggableText {
   -bool isDragging
   -Vector2 dragStartOffset
   -Camera eventCamera
+  +Transform whiteboardPlane
+  +Transform drawingTip
+  +InputActionProperty dragAction
+  +InputActionProperty resizeAction
+  +float minScale
+  +float maxScale
   -void Awake()
   +void Initialize(RectTransform whiteboard)
   -void Update()
@@ -381,6 +398,7 @@ class DrawingCommand {
 %% =========================
 
 ExportSVG --> WhiteboardTextManager : reads textHistory
+ExportDXF --> WhiteboardTextManager : reads text entries
 DXFImporter --> DXFPathRenderer : renders imported paths
 SplineVRDraw --> RedoUndoManager : registers lines
 StraightLineVRDraw --> RedoUndoManager : registers lines
@@ -388,6 +406,7 @@ RectangleVRDraw --> RedoUndoManager : registers lines
 CircleVRDraw --> RedoUndoManager : registers lines
 PolygonVRDraw --> RedoUndoManager : registers lines
 WhiteboardTextManager --> DraggableText : adds component
+WhiteboardTextManager --> RedoUndoManager : registers text
 SplineVRDraw --> VRDrawSettings
 StraightLineVRDraw --> StraightLineVRDrawSettings
 RectangleVRDraw --> RectangleVRDrawSettings
@@ -400,4 +419,3 @@ FileListManager ..> DrawingCommand : produces
 Notes
 - Classes from Unity packages and samples are intentionally omitted.
 - Only project classes located under `Assets/Scripts` are diagrammed.
-

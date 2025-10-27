@@ -27,22 +27,29 @@ Text features
 - Files: `Assets/Scripts/TextManager.cs`, `Assets/Scripts/DraggableText.cs`
 - Flow
   - Click “Add Text” → show TMP input → on submit, instantiate a TMP label under `whiteboardArea`.
-  - Each label gets `DraggableText`, which clamps dragging to the whiteboard rect.
-  - `textHistory` records content, position, and font size for export.
+  - Each label gets `DraggableText`, which clamps dragging to the whiteboard rect and supports controller‑based drag/resize on the whiteboard plane.
+  - `textHistory` records content, position, and font size for export; labels are also registered with `RedoUndoManager` so undo/redo/clear apply to text.
 - Inspector configuration
   - `openInputButton` (Button), `textInputField` (TMP_InputField), `whiteboardArea` (RectTransform), `textPrefab` (TextMeshProUGUI).
+  - VR integration: assign `whiteboardPlane`, `drawingTip`, and `InputActionProperty` bindings for drag/resize/undo/redo to mirror drawing tools.
   - For world‑space canvas: ensure a `GraphicRaycaster` and an `EventSystem` with `InputSystemUIInputModule` exist.
 
 Import — SVG/DXF
 - Primary entry: `Assets/Scripts/FileListManager.cs`
   - Builds a file list UI from `Assets/<importFolderPath>`.
   - On click: detects extension and routes to `LoadSVGFile` or `LoadDXFFile`.
-  - Parses into a sequence of drawing commands (MoveTo/LineTo/Circle), then renders to the whiteboard with a `LineRenderer` per path.
+  - Parses into a sequence of drawing commands (MoveTo/LineTo/Circle, and ARC segmented), then renders to the whiteboard with a `LineRenderer` per path; groups are separated to avoid unintended connections.
 - DXF (optional path): `Assets/Scripts/ModelingTools/Import/DXFImporter.cs` → `DXFPathRenderer` for interactive paths.
 - Inspector configuration (FileListManager)
   - UI: `fileSelectionPanel`, `togglePanelButton`, `scrollViewContent`, `fileButtonPrefab`.
   - Whiteboard: `drawingPlane`, `lineRendererPrefab`, sizing (`whiteboardWidth/Height/Center`), `importedDrawingColor`, `importedDrawingZOffset`.
   - Behavior: `useSimplifiedParsing`, `showDXFAsPoints`, `logDXFContent`.
+  - Visibility: imported strokes use a positive Z‑offset and material renderQueue bump so they sit on top of the board.
+
+Export notes
+- SVG export maps strokes to canvas coordinates and includes UGUI and world‑space TMP text.
+- DXF export writes LWPOLYLINE vertices and, when enabled, TEXT entities sized by a configurable height factor.
+- Editor uses `SaveFilePanel`; Windows standalone uses a native SaveFileDialog.
 
 Demo cue
 - Open file panel → select an SVG → show distinct paths rendered on the board; repeat with a DXF.

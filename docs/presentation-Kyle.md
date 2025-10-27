@@ -32,16 +32,17 @@ Export
 - SVG path
   - Finds `LineRenderer` strokes (preferring names like VR_/Drawing) and converts board‑local points into SVG canvas coordinates.
   - Auto bounds option computes min/max from current drawings; otherwise uses manual bounds.
-  - Also exports text entries from `WhiteboardTextManager` via `whiteboardTextArea` or history.
-  - Output: `Application.persistentDataPath/<fileName>`.
+  - Also exports both UI text entries (UGUI under `whiteboardTextArea` or `textManager.textHistory`) and world‑space TMP labels under the whiteboard plane.
+  - Save path: Editor uses `SaveFilePanel`; Windows standalone uses a native SaveFileDialog; other platforms fall back to `persistentDataPath`.
 - DXF path
   - Similar bounds logic; writes `LWPOLYLINE` entities with color indices approximating Unity colors.
   - Scales to `dxfScale` units (e.g., millimeters if `1000`).
+  - Optional text export: when `includeText` is true, writes TEXT entities from both UGUI and world‑space TMP; size scaled by `dxfTextHeightFactor`.
 - Inspector configuration
   - SVG: assign `whiteboardPlane`, optional `whiteboardTextArea`, `textManager`; set `canvasWidth/Height`, `fileName`.
-  - DXF: assign `whiteboardPlane`, choose `fileName`, `dxfScale`, bounds option.
+  - DXF: assign `whiteboardPlane`, optional `whiteboardTextArea`, `textManager`; choose `fileName`, `dxfScale`, `dxfTextHeightFactor`, bounds option, and `includeText`.
 - Demo cue
-  - Press `E` (SVG) or `D` (DXF) per scripts’ Update handlers to save; reveal in Finder in Editor.
+  - Press `E` (SVG) or `D` (DXF) per scripts’ Update handlers to save; Editor reveals in Finder.
 
 Q&A prompts
 - How are circles exported? — SVG as polyline/path; DXF as `LWPOLYLINE` points.
@@ -114,3 +115,22 @@ for (int i = 0; i < line.positionCount; i++)
 ```
 Explanation
 - DXF uses unit coordinates; we scale normalized board‑local values by `dxfScale` and emit LWPOLYLINE vertices.
+
+- DXF TEXT entity writing (from `ExportDXF`)
+```csharp
+foreach (var t in texts)
+{
+    float nx = (t.localPos.x - actualMin.x) / boundsWidth;
+    float ny = (t.localPos.y - actualMin.y) / boundsHeight;
+    float dx = nx * dxfScale;
+    float dy = ny * dxfScale;
+    float height = Mathf.Max(1f, t.fontSize) * Mathf.Max(0.0001f, t.scale) * Mathf.Max(0.0001f, dxfTextHeightFactor);
+    dxf.AppendLine("0"); dxf.AppendLine("TEXT");
+    dxf.AppendLine("10"); dxf.AppendLine(dx.ToString("F6", culture));
+    dxf.AppendLine("20"); dxf.AppendLine(dy.ToString("F6", culture));
+    dxf.AppendLine("40"); dxf.AppendLine(height.ToString("F6", culture));
+    dxf.AppendLine("1");  dxf.AppendLine(t.text ?? string.Empty);
+}
+```
+Explanation
+- When enabled, export maps text to DXF TEXT entities using normalized plane coordinates and a configurable text height factor.

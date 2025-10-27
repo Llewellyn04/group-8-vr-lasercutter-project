@@ -22,6 +22,7 @@ Transforms
 Unity configuration
 - Ensure `dragAction` and `resizeAction` input bindings exist and are assigned.
 - Verify `whiteboardPlane` is correct and stable; manipulation relies on its transform.
+- Text labels use the same plane projection and InputAction bindings via `DraggableText` for consistent drag/resize behavior.
 
 Demo cue (45 seconds)
 - Drag a closed rectangle by grabbing inside; resize it around centroid; repeat on a polyline using open‑line tolerance.
