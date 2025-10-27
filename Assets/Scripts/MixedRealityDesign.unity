@@ -3375,6 +3375,89 @@ MonoBehaviour:
   textInputField: {fileID: 1800827813}
   whiteboardArea: {fileID: 896071513}
   textPrefab: {fileID: 1439046836}
+  whiteboardPlane: {fileID: 896071513}
+  drawingTip: {fileID: 636695651}
+  redoUndoManager: {fileID: 373176420}
+  dragAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Drag
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: e26c74ba-9a53-4d42-9bcd-e4e48aa3d230
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 38170c76-3816-4e8b-b393-8b8ae454bc30
+        m_Path: <XRController>{LeftHand}/primaryButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Drag
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  resizeAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Resize
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 03fb50e8-5941-4fed-a211-9240ecfc40fe
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 2a312117-0527-4525-b3fe-3889e45c6022
+        m_Path: <XRController>{LeftHand}/secondaryButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Resize
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  undoAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Undo
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 42ed1a63-76f7-4346-8325-08ee6267650f
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 78dd83d7-fb64-4ca9-9e59-901940794d6c
+        m_Path: <XRController>{RightHand}/primaryButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Undo
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  redoAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Redo
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 4682bea5-a8ba-4392-9729-077e719f82c6
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: af119b96-7443-432a-9e62-b6bf94f07a5d
+        m_Path: <XRController>{RightHand}/secondaryButton
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Redo
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 0}
   textHistory: []
 --- !u!4 &326499198
 Transform:

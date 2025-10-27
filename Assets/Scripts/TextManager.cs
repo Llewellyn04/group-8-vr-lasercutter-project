@@ -30,6 +30,17 @@ public class WhiteboardTextManager : MonoBehaviour
     public RectTransform whiteboardArea;        // Parent where text objects go
     public TextMeshProUGUI textPrefab;          // Prefab for new text objects
 
+    [Header("VR Controller + Plane References")]
+    public Transform whiteboardPlane;           // Same plane used by drawing tools
+    public Transform drawingTip;                // Controller tip used for ray/plane hit
+    public RedoUndoManager redoUndoManager;     // Shared undo/redo manager (lines + text)
+
+    [Header("Controller Actions (match SplineVRDraw)")]
+    public InputActionProperty dragAction;
+    public InputActionProperty resizeAction;
+    public InputActionProperty undoAction;
+    public InputActionProperty redoAction;
+
     [Header("Export Handling")]
     public List<VectorTextEntry> textHistory = new List<VectorTextEntry>();
 
@@ -50,6 +61,22 @@ public class WhiteboardTextManager : MonoBehaviour
     textInputField.gameObject.SetActive(false);
     openInputButton.onClick.AddListener(ShowInputField);
     textInputField.onEndEdit.AddListener(OnTextEntered);
+    }
+
+    void OnEnable()
+    {
+        if (dragAction.action != null) dragAction.action.Enable();
+        if (resizeAction.action != null) resizeAction.action.Enable();
+        if (undoAction.action != null) undoAction.action.Enable();
+        if (redoAction.action != null) redoAction.action.Enable();
+    }
+
+    void OnDisable()
+    {
+        if (dragAction.action != null) dragAction.action.Disable();
+        if (resizeAction.action != null) resizeAction.action.Disable();
+        if (undoAction.action != null) undoAction.action.Disable();
+        if (redoAction.action != null) redoAction.action.Disable();
     }
     public void VerifySetup()
     {
@@ -106,12 +133,23 @@ public class WhiteboardTextManager : MonoBehaviour
 
             DraggableText draggable = newTextObj.gameObject.AddComponent<DraggableText>();
             draggable.Initialize(whiteboardArea);
+            // Provide controller + plane references so text can be dragged/resized like splines
+            draggable.whiteboardPlane = whiteboardPlane;
+            draggable.drawingTip = drawingTip;
+            draggable.dragAction = dragAction;
+            draggable.resizeAction = resizeAction;
 
             textHistory.Add(new VectorTextEntry(
                 newText,
                 newTextObj.rectTransform.anchoredPosition,
                 Mathf.RoundToInt(newTextObj.fontSize)
             ));
+
+            // Register with the shared RedoUndoManager so Undo/Redo/Clear affects text too
+            if (redoUndoManager != null)
+            {
+                redoUndoManager.RegisterLine(newTextObj.gameObject);
+            }
         }
 
         textInputField.text = string.Empty;
@@ -139,23 +177,26 @@ public class WhiteboardTextManager : MonoBehaviour
     }
     void Update()
     {
-        // Check for mouse click using new Input System
-        if (UnityEngine.InputSystem.Mouse.current != null &&
-            UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
+        // Optionally mirror Undo/Redo controller buttons for text-only scenes
+        if (redoUndoManager != null)
         {
-            Vector2 mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+            bool undoPressed = false;
+            bool redoPressed = false;
+            try { if (undoAction.action != null) undoPressed = undoAction.action.ReadValue<float>() > 0.5f; } catch { undoPressed = false; }
+            try { if (redoAction.action != null) redoPressed = redoAction.action.ReadValue<float>() > 0.5f; } catch { redoPressed = false; }
 
-            PointerEventData pointerData = new PointerEventData(EventSystem.current);
-            pointerData.position = mousePos;
+            // Local edge detection so actions fire once per press
+            if (undoPressed && !_lastUndo)
+                redoUndoManager.Undo();
+            if (redoPressed && !_lastRedo)
+                redoUndoManager.Redo();
 
-            List<RaycastResult> results = new List<RaycastResult>();
-            EventSystem.current.RaycastAll(pointerData, results);
-
-            Debug.Log($"[TextManager] === CLICK at {mousePos} - Hit {results.Count} objects ===");
-            foreach (var result in results)
-            {
-                Debug.Log($"[TextManager] Hit: {result.gameObject.name} (has DraggableText: {result.gameObject.GetComponent<DraggableText>() != null})");
-            }
+            _lastUndo = undoPressed;
+            _lastRedo = redoPressed;
         }
     }
+
+    // Local press edge tracking for fallback bindings
+    private bool _lastUndo = false;
+    private bool _lastRedo = false;
 }
