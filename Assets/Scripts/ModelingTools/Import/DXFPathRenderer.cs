@@ -58,6 +58,11 @@ public class DXFPathRenderer : MonoBehaviour
             // Position pathGO properly (optional, depends on your coordinate space)
             pathGO.transform.localPosition = Vector3.zero;
             pathGO.transform.localRotation = Quaternion.identity;
+
+            // Make newly created path the current design for attachment (if tool exists)
+            var attachTool = FindObjectOfType<AttachDesignToController>();
+            if (attachTool != null)
+                attachTool.SetCurrentDesign(pathGO);
         }
     }
 }

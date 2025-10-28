@@ -569,10 +569,19 @@ public class StraightLineVRDraw : MonoBehaviour
                     GameObject lineObj = currentLine.gameObject;
                     redoUndoManager.RegisterLine(lineObj);
                     Debug.Log($"{drawMode} registered: {lineObj.name}. Undo stack count: {redoUndoManager.UndoCount}");
+
+                    // Update current selection for attachment tool
+                    var attachTool = FindObjectOfType<AttachDesignToController>();
+                    if (attachTool != null)
+                        attachTool.SetCurrentDesign(lineObj);
                 }
                 else
                 {
                     Debug.LogWarning("RedoUndoManager not assigned!");
+
+                    var attachTool = FindObjectOfType<AttachDesignToController>();
+                    if (attachTool != null)
+                        attachTool.SetCurrentDesign(currentLine.gameObject);
                 }
             }
             else

@@ -277,6 +277,11 @@ public class SplineVRDraw : MonoBehaviour
             _                    => "VR_Drawing"
         };
         GameObject lineObj = new GameObject(objName);
+        if (whiteboardPlane != null)
+        {
+            // Ensure drawings live under the whiteboard for grouping/exports
+            lineObj.transform.SetParent(whiteboardPlane, worldPositionStays: true);
+        }
         currentLine = lineObj.AddComponent<LineRenderer>();
 
         currentLine.material = settings.lineMaterial;
@@ -355,10 +360,20 @@ public class SplineVRDraw : MonoBehaviour
                     GameObject lineObj = currentLine.gameObject;
                     redoUndoManager.RegisterLine(lineObj);
                     Debug.Log($"{drawMode} registered: {lineObj.name}. Undo stack count: {redoUndoManager.UndoCount}");
+
+                    // Update current design for attachment
+                    var attachTool = FindObjectOfType<AttachDesignToController>();
+                    if (attachTool != null)
+                        attachTool.SetCurrentDesign(lineObj);
                 }
                 else
                 {
                     Debug.LogWarning("RedoUndoManager not assigned!");
+
+                    // Even without redo/undo, still update attach tool selection
+                    var attachTool = FindObjectOfType<AttachDesignToController>();
+                    if (attachTool != null)
+                        attachTool.SetCurrentDesign(currentLine.gameObject);
                 }
             }
             else
@@ -517,6 +532,11 @@ public class SplineVRDraw : MonoBehaviour
         {
             redoUndoManager.RegisterLine(go);
         }
+
+        // Update attachment selection to newly created text
+        var attachTool = FindObjectOfType<AttachDesignToController>();
+        if (attachTool != null)
+            attachTool.SetCurrentDesign(go);
     }
 
     // ===== Helpers to build previews for Rectangle/Circle/Polygon =====
@@ -602,6 +622,11 @@ public class SplineVRDraw : MonoBehaviour
                     draggedLine = picked;
                     draggedOriginalLocalPoints = originalLocal;
                     dragStartLocalPoint = hitLocal;
+
+                    // Update selected design for attachment tool
+                    var attachTool = FindObjectOfType<AttachDesignToController>();
+                    if (attachTool != null && picked != null)
+                        attachTool.SetCurrentDesign(picked.gameObject);
                 }
             }
             else if (draggedLine != null && draggedOriginalLocalPoints != null)

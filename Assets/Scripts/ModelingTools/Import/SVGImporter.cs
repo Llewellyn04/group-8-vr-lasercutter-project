@@ -448,6 +448,11 @@ public class SVGImporter : MonoBehaviour
         {
             redoUndoManager.RegisterLine(lineObj);
         }
+
+        // Update current design for attachment tool (if present)
+        var attachTool = FindObjectOfType<AttachDesignToController>();
+        if (attachTool != null)
+            attachTool.SetCurrentDesign(lineObj);
     }
 
     private void DrawCircleWorld(Vector2 localCenter, float radius)

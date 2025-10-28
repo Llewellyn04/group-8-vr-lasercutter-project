@@ -49,6 +49,10 @@ public class ExportDXF : MonoBehaviour
         List<LineRenderer> drawings = new List<LineRenderer>();
         foreach (LineRenderer line in allLines)
         {
+            // Ignore any line that is part of an attached clone
+            if (IsUnderAttachedClone(line.transform) || line.name.Contains("_AttachedClone"))
+                continue;
+
             bool isWhiteboardChild = whiteboardPlane != null && (line.transform == whiteboardPlane || line.transform.IsChildOf(whiteboardPlane));
             if (isWhiteboardChild || line.name.Contains("VR_") || line.name.Contains("Drawing"))
             {
@@ -367,6 +371,10 @@ public class ExportDXF : MonoBehaviour
             var worldTmps = whiteboardPlane.GetComponentsInChildren<TMPro.TextMeshPro>(includeInactive: false);
             foreach (var tmp in worldTmps)
             {
+                // Skip any world TMP that lives under a clone marker
+                if (IsUnderAttachedClone(tmp.transform) || tmp.name.Contains("_AttachedClone"))
+                    continue;
+
                 Vector3 local = whiteboardPlane.InverseTransformPoint(tmp.transform.position);
                 list.Add(new TextEntry
                 {
@@ -379,6 +387,24 @@ public class ExportDXF : MonoBehaviour
         }
 
         return list;
+    }
+
+    private static System.Type _cloneMarkerType;
+    private static bool IsUnderAttachedClone(Transform t)
+    {
+        if (t == null) return false;
+        if (_cloneMarkerType == null)
+            _cloneMarkerType = System.Type.GetType("AttachedCloneMarker, Assembly-CSharp");
+        Transform cur = t;
+        while (cur != null)
+        {
+            if (_cloneMarkerType != null && cur.GetComponent(_cloneMarkerType) != null)
+                return true;
+            if (cur.name.Contains("_AttachedClone"))
+                return true;
+            cur = cur.parent;
+        }
+        return false;
     }
 
     private void CalculateDrawingBounds(List<LineRenderer> drawings, out Vector2 min, out Vector2 max)
